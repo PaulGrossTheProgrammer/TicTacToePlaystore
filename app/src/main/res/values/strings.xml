@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">TicTacToe</string>
+    <string name="curr_player_message">Player: %1$s</string>
+    <string name="new_game_message">New Game</string>
+    <string name="winner_message">Winner: %1$s</string>
+    <string name="exit_message">Exit</string>
+    <string name="exit_title_message">Exit Application</string>
+    <string name="exit_confirm_message">Are you sure you want to to exit?</string>
+    <string name="go_back_message">Back</string>
+    <string name="new_game_title_message">New Game</string>
+    <string name="new_game_confirm_message">Are you sure you want to start a new game?</string>
+    <string name="new_button_message">New</string>
+</resources>

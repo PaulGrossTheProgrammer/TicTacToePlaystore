@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">빙고 게임</string>
+    <string name="curr_player_message">플레이어: %1$s</string>
+    <string name="new_game_message">새로운 게임</string>
+    <string name="winner_message">우승자: %1$s</string>
+    <string name="exit_message">출구</string>
+    <string name="exit_title_message">응용 프로그램 종료</string>
+    <string name="exit_confirm_message">종료하시겠습니까?</string>
+    <string name="go_back_message">돌아가다</string>
+    <string name="new_game_title_message">새로운 게임</string>
+    <string name="new_game_confirm_message">새 게임을 시작하시겠습니까?</string>
+    <string name="new_button_message">새로운</string>
+</resources>

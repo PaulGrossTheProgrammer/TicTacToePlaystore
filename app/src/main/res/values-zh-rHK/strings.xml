@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">井字遊戲</string>
+    <string name="curr_player_message">播放器: %1$s</string>
+    <string name="new_game_message">新遊戲</string>
+    <string name="winner_message">優勝者: %1$s</string>
+    <string name="exit_message">出口</string>
+    <string name="exit_title_message">退出申請</string>
+    <string name="exit_confirm_message">您確定要退出嗎？</string>
+    <string name="go_back_message">回去</string>
+    <string name="new_game_title_message">新遊戲</string>
+    <string name="new_game_confirm_message">您確定要開始新遊戲嗎?</string>
+    <string name="new_button_message">新的</string>
+</resources>
