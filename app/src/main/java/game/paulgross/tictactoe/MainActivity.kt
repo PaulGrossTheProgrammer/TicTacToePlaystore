@@ -10,10 +10,6 @@ import androidx.appcompat.app.AlertDialog
 
 class MainActivity : AppCompatActivity() {
 
-    // State variables
-    private var currPlayer = "X"
-    private var winner = ""
-
     /**
      * All the possible states for a square.
      */
@@ -39,6 +35,10 @@ class MainActivity : AppCompatActivity() {
         SquareState.E, SquareState.E, SquareState.E
     )
 
+    // State variables
+    private var currPlayer: SquareState = SquareState.X
+    private var winner = SquareState.E
+
     private val allPossibleWinSquares: List<List<Int>> = listOf(
         listOf(0, 1, 2),
         listOf(3, 4, 5),
@@ -52,18 +52,7 @@ class MainActivity : AppCompatActivity() {
         listOf(2, 4, 6)
     )
 
-        // Pointers to the display View squares
-    private var square1: TextView? = null
-    private var square2: TextView? = null
-    private var square3: TextView? = null
-    private var square4: TextView? = null
-    private var square5: TextView? = null
-    private var square6: TextView? = null
-    private var square7: TextView? = null
-    private var square8: TextView? = null
-    private var square9: TextView? = null
-
-    private var allDisplaySquares: MutableList<TextView?> = mutableListOf()
+    private var displaySquares: MutableList<TextView?> = mutableListOf()
 
     // Colours
     private var colorReset: Int? = null
@@ -71,41 +60,6 @@ class MainActivity : AppCompatActivity() {
 
     private var textPlayer: TextView? = null
 
-    /**
-     * Lookup function for determining the grid index for each screen View square.
-     */
-    private fun viewLookupGridIndex(view: View): Int? {
-        when (view) {
-            square1 -> return 0
-            square2 -> return 1
-            square3 -> return 2
-            square4 -> return 3
-            square5 -> return 4
-            square6 -> return 5
-            square7 -> return 6
-            square8 -> return 7
-            square9 -> return 8
-        }
-        return null  // That view isn't a grid square
-    }
-
-    /**
-     * Lookup function for determining the screen View square for each grid index.
-     */
-    private fun gridIndexLookupView(index: Int): View? {
-        when (index) {
-            0 -> return square1
-            1 -> return square2
-            2 -> return square3
-            3 -> return square4
-            4 -> return square5
-            5 -> return square6
-            6 -> return square7
-            7 -> return square8
-            8 -> return square9
-        }
-        return null  // Invalid grid index
-    }
 
     /**
      * Dump out the current grid state into the debug log.
@@ -131,7 +85,7 @@ class MainActivity : AppCompatActivity() {
             editor.putString("Grid$i", grid[i].toString())
         }
 
-        editor.putString("CurrPlayer", currPlayer)
+        editor.putString("CurrPlayer", currPlayer.toString())
 
         editor.apply()
     }
@@ -153,7 +107,7 @@ class MainActivity : AppCompatActivity() {
         debugGrid()
 
         // If there is no current player to restore, default to "X"
-        currPlayer = preferences.getString("CurrPlayer", "X").toString()
+        currPlayer = SquareState.valueOf(preferences.getString("CurrPlayer", "X").toString())
     }
 
     override fun onPause() {
@@ -167,25 +121,17 @@ class MainActivity : AppCompatActivity() {
 
         setContentView(R.layout.activity_main)
 
-        square1 = findViewById(R.id.textSquare1)
-        square2 = findViewById(R.id.textSquare2)
-        square3 = findViewById(R.id.textSquare3)
-        square4 = findViewById(R.id.textSquare4)
-        square5 = findViewById(R.id.textSquare5)
-        square6 = findViewById(R.id.textSquare6)
-        square7 = findViewById(R.id.textSquare7)
-        square8 = findViewById(R.id.textSquare8)
-        square9 = findViewById(R.id.textSquare9)
-
-        allDisplaySquares.add(square1)
-        allDisplaySquares.add(square2)
-        allDisplaySquares.add(square3)
-        allDisplaySquares.add(square4)
-        allDisplaySquares.add(square5)
-        allDisplaySquares.add(square6)
-        allDisplaySquares.add(square7)
-        allDisplaySquares.add(square8)
-        allDisplaySquares.add(square9)
+        // Add all the display squares into the list.
+        // NOTE: The square MUST BE added in index order.
+        displaySquares.add(findViewById(R.id.textSquare1))
+        displaySquares.add(findViewById(R.id.textSquare2))
+        displaySquares.add(findViewById(R.id.textSquare3))
+        displaySquares.add(findViewById(R.id.textSquare4))
+        displaySquares.add(findViewById(R.id.textSquare5))
+        displaySquares.add(findViewById(R.id.textSquare6))
+        displaySquares.add(findViewById(R.id.textSquare7))
+        displaySquares.add(findViewById(R.id.textSquare8))
+        displaySquares.add(findViewById(R.id.textSquare9))
 
         colorReset = getColor(R.color.green_pastel)
         colorWinning = getColor(R.color.orange_pastel)
@@ -208,8 +154,8 @@ class MainActivity : AppCompatActivity() {
     private fun resetGame() {
         resetGridState()
         resetGridDisplay()
-        winner = ""
-        currPlayer = "X"
+        winner = SquareState.E
+        currPlayer = SquareState.X
         displayCurrPlayer()
     }
 
@@ -223,15 +169,16 @@ class MainActivity : AppCompatActivity() {
      * Displays the current grid state using the View squares.
      */
     private fun displayGrid() {
-        displaySquare(grid[0], square1)
-        displaySquare(grid[1], square2)
-        displaySquare(grid[2], square3)
-        displaySquare(grid[3], square4)
-        displaySquare(grid[4], square5)
-        displaySquare(grid[5], square6)
-        displaySquare(grid[6], square7)
-        displaySquare(grid[7], square8)
-        displaySquare(grid[8], square9)
+        // TODO: Convert to iterator
+        displaySquare(grid[0], displaySquares[0])
+        displaySquare(grid[1], displaySquares[1])
+        displaySquare(grid[2], displaySquares[2])
+        displaySquare(grid[3], displaySquares[3])
+        displaySquare(grid[4], displaySquares[4])
+        displaySquare(grid[5], displaySquares[5])
+        displaySquare(grid[6], displaySquares[6])
+        displaySquare(grid[7], displaySquares[7])
+        displaySquare(grid[8], displaySquares[8])
     }
 
     private fun displaySquare(state: SquareState, squareView: TextView?) {
@@ -243,7 +190,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun resetGridDisplay() {
-        allDisplaySquares.forEach{ square ->
+        displaySquares.forEach{ square ->
             square?.setBackgroundColor(colorReset!!)
             square?.text = ""
         }
@@ -258,8 +205,8 @@ class MainActivity : AppCompatActivity() {
     private fun displayAnyWin(): Boolean {
         val winSquares: List<Int>? = getWinningSquares()
         if (winSquares != null) {
-            winner = grid[winSquares[0]].toString()
-            displayWinner(winner)
+            winner = grid[winSquares[0]]
+            displayWinner(winner.toString())
             displayVictory(winSquares)
 
             Toast.makeText(
@@ -282,21 +229,21 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun displayVictory(winSquares: List<Int>) {
-        gridIndexLookupView(winSquares[0])?.setBackgroundColor(colorWinning!!)
-        gridIndexLookupView(winSquares[1])?.setBackgroundColor(colorWinning!!)
-        gridIndexLookupView(winSquares[2])?.setBackgroundColor(colorWinning!!)
+        displaySquares[winSquares[0]]?.setBackgroundColor(colorWinning!!)
+        displaySquares[winSquares[1]]?.setBackgroundColor(colorWinning!!)
+        displaySquares[winSquares[2]]?.setBackgroundColor(colorWinning!!)
     }
 
     /**
      *  Handler for when the User clicks a square in the playing grid.
      */
     fun onClickPlaySquare(view: View) {
-        if (winner != "") {
+        if (winner != SquareState.E) {
             return // No more moves after a win
         }
 
-        val gridIndex = viewLookupGridIndex(view as TextView)
-        if (gridIndex == null) {
+        val gridIndex = displaySquares.indexOf(view as TextView)
+        if (gridIndex == -1) {
             Log.d("Debug", "The user did NOT click a grid square.")
             return
         }
@@ -306,23 +253,15 @@ class MainActivity : AppCompatActivity() {
         }
 
         // Update the square's state
-        var newState = SquareState.E
-        when (currPlayer) {
-            "O" -> { newState = SquareState.O }
-            "X" -> { newState = SquareState.X }
-        }
-        grid[gridIndex] = newState
+        grid[gridIndex] = currPlayer
 
-        // Update the screen
-        displaySquare(newState, view)
+        // Update the square's display
+        displaySquare(currPlayer, view)
 
         val winnerFound = displayAnyWin()
         if (!winnerFound) {
             // Switch to next player
-            when (currPlayer) {
-                "O" -> { currPlayer = "X" }
-                "X" -> { currPlayer = "O" }
-            }
+            currPlayer = if (currPlayer == SquareState.X) { SquareState.O } else { SquareState.X }
             displayCurrPlayer()
         }
     }
