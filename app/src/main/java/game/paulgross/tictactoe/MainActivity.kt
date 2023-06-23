@@ -52,7 +52,7 @@ class MainActivity : AppCompatActivity() {
         listOf(2, 4, 6)
     )
 
-    private var displaySquares: MutableList<TextView?> = mutableListOf()
+    private var displaySquareList: MutableList<TextView?> = mutableListOf()
 
     // Colours
     private var colorReset: Int? = null
@@ -122,16 +122,16 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         // Add all the display squares into the list.
-        // NOTE: The square MUST BE added in index order.
-        displaySquares.add(findViewById(R.id.textSquare1))
-        displaySquares.add(findViewById(R.id.textSquare2))
-        displaySquares.add(findViewById(R.id.textSquare3))
-        displaySquares.add(findViewById(R.id.textSquare4))
-        displaySquares.add(findViewById(R.id.textSquare5))
-        displaySquares.add(findViewById(R.id.textSquare6))
-        displaySquares.add(findViewById(R.id.textSquare7))
-        displaySquares.add(findViewById(R.id.textSquare8))
-        displaySquares.add(findViewById(R.id.textSquare9))
+        // NOTE: The squares MUST BE added in index order.
+        displaySquareList.add(findViewById(R.id.textSquare1))
+        displaySquareList.add(findViewById(R.id.textSquare2))
+        displaySquareList.add(findViewById(R.id.textSquare3))
+        displaySquareList.add(findViewById(R.id.textSquare4))
+        displaySquareList.add(findViewById(R.id.textSquare5))
+        displaySquareList.add(findViewById(R.id.textSquare6))
+        displaySquareList.add(findViewById(R.id.textSquare7))
+        displaySquareList.add(findViewById(R.id.textSquare8))
+        displaySquareList.add(findViewById(R.id.textSquare9))
 
         colorReset = getColor(R.color.green_pastel)
         colorWinning = getColor(R.color.orange_pastel)
@@ -169,16 +169,9 @@ class MainActivity : AppCompatActivity() {
      * Displays the current grid state using the View squares.
      */
     private fun displayGrid() {
-        // TODO: Convert to iterator
-        displaySquare(grid[0], displaySquares[0])
-        displaySquare(grid[1], displaySquares[1])
-        displaySquare(grid[2], displaySquares[2])
-        displaySquare(grid[3], displaySquares[3])
-        displaySquare(grid[4], displaySquares[4])
-        displaySquare(grid[5], displaySquares[5])
-        displaySquare(grid[6], displaySquares[6])
-        displaySquare(grid[7], displaySquares[7])
-        displaySquare(grid[8], displaySquares[8])
+        for (i in 0..8) {
+            displaySquare(grid[i], displaySquareList[i])
+        }
     }
 
     private fun displaySquare(state: SquareState, squareView: TextView?) {
@@ -190,7 +183,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun resetGridDisplay() {
-        displaySquares.forEach{ square ->
+        displaySquareList.forEach{ square ->
             square?.setBackgroundColor(colorReset!!)
             square?.text = ""
         }
@@ -229,9 +222,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun displayVictory(winSquares: List<Int>) {
-        displaySquares[winSquares[0]]?.setBackgroundColor(colorWinning!!)
-        displaySquares[winSquares[1]]?.setBackgroundColor(colorWinning!!)
-        displaySquares[winSquares[2]]?.setBackgroundColor(colorWinning!!)
+        displaySquareList[winSquares[0]]?.setBackgroundColor(colorWinning!!)
+        displaySquareList[winSquares[1]]?.setBackgroundColor(colorWinning!!)
+        displaySquareList[winSquares[2]]?.setBackgroundColor(colorWinning!!)
     }
 
     /**
@@ -242,7 +235,7 @@ class MainActivity : AppCompatActivity() {
             return // No more moves after a win
         }
 
-        val gridIndex = displaySquares.indexOf(view as TextView)
+        val gridIndex = displaySquareList.indexOf(view as TextView)
         if (gridIndex == -1) {
             Log.d("Debug", "The user did NOT click a grid square.")
             return
