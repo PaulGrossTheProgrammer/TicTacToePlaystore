@@ -39,7 +39,7 @@ class MainActivity : AppCompatActivity() {
     private var currPlayer: SquareState = SquareState.X
     private var winner = SquareState.E
 
-    private val allPossibleWinSquares: List<List<Int>> = listOf(
+    private val allPossibleWinCombinations: List<List<Int>> = listOf(
         listOf(0, 1, 2),
         listOf(3, 4, 5),
         listOf(6, 7, 8),
@@ -57,7 +57,7 @@ class MainActivity : AppCompatActivity() {
     private var colorOfReset: Int? = null
     private var colorOfWinning: Int? = null
 
-    private var textPlayer: TextView? = null
+    private var textPlayerView: TextView? = null
 
 
     /**
@@ -135,7 +135,7 @@ class MainActivity : AppCompatActivity() {
         colorOfReset = getColor(R.color.green_pastel)
         colorOfWinning = getColor(R.color.orange_pastel)
 
-        textPlayer = findViewById(R.id.textPlayer)
+        textPlayerView = findViewById(R.id.textPlayer)
 
         restoreAppState()
 
@@ -165,19 +165,18 @@ class MainActivity : AppCompatActivity() {
 
 
     /**
-     * Displays the current grid state using the View squares.
+     * Updates the current grid state into the display squares.
      */
     private fun displayGrid() {
         for (i in 0..8) {
-            displaySquare(grid[i], displaySquareList[i])
-        }
-    }
+            val state = grid[i]
+            val view = displaySquareList[i]
 
-    private fun displaySquare(state: SquareState, squareView: TextView?) {
-        if (state == SquareState.E) {
-            squareView?.text = ""
-        } else {
-            squareView?.text = state.toString()
+            if (state == SquareState.E) {
+                view?.text = ""
+            } else {
+                view?.text = state.toString()
+            }
         }
     }
 
@@ -212,7 +211,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun getWinningSquares(): List<Int>? {
-        allPossibleWinSquares.forEach{ possibleWin ->
+        allPossibleWinCombinations.forEach{ possibleWin ->
             if (grid[possibleWin[0]] != SquareState.E && grid[possibleWin[0]] == grid[possibleWin[1]] && grid[possibleWin[0]] == grid[possibleWin[2]]) {
                 return possibleWin  // Found a winner
             }
@@ -248,7 +247,7 @@ class MainActivity : AppCompatActivity() {
         grid[gridIndex] = currPlayer
 
         // Update the square's display
-        displaySquare(currPlayer, view)
+        view.text = currPlayer.toString()
 
         val winnerFound = displayAnyWin()
         if (!winnerFound) {
@@ -259,12 +258,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun displayCurrPlayer() {
-        (textPlayer as TextView).text =
+        (textPlayerView as TextView).text =
             String.format(getString(R.string.curr_player_message), currPlayer)
     }
 
     private fun displayWinner(winner: String) {
-        (textPlayer as TextView).text = String.format(getString(R.string.winner_message), winner)
+        (textPlayerView as TextView).text = String.format(getString(R.string.winner_message), winner)
     }
 
     fun onClickNewGame(view: View) {
