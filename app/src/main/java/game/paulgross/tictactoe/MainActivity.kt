@@ -54,9 +54,8 @@ class MainActivity : AppCompatActivity() {
 
     private var displaySquareList: MutableList<TextView?> = mutableListOf()
 
-    // Colours
-    private var colorReset: Int? = null
-    private var colorWinning: Int? = null
+    private var colorOfReset: Int? = null
+    private var colorOfWinning: Int? = null
 
     private var textPlayer: TextView? = null
 
@@ -133,8 +132,8 @@ class MainActivity : AppCompatActivity() {
         displaySquareList.add(findViewById(R.id.textSquare8))
         displaySquareList.add(findViewById(R.id.textSquare9))
 
-        colorReset = getColor(R.color.green_pastel)
-        colorWinning = getColor(R.color.orange_pastel)
+        colorOfReset = getColor(R.color.green_pastel)
+        colorOfWinning = getColor(R.color.orange_pastel)
 
         textPlayer = findViewById(R.id.textPlayer)
 
@@ -184,7 +183,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun resetGridDisplay() {
         displaySquareList.forEach{ square ->
-            square?.setBackgroundColor(colorReset!!)
+            square?.setBackgroundColor(colorOfReset!!)
             square?.text = ""
         }
     }
@@ -222,9 +221,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun displayVictory(winSquares: List<Int>) {
-        displaySquareList[winSquares[0]]?.setBackgroundColor(colorWinning!!)
-        displaySquareList[winSquares[1]]?.setBackgroundColor(colorWinning!!)
-        displaySquareList[winSquares[2]]?.setBackgroundColor(colorWinning!!)
+        displaySquareList[winSquares[0]]?.setBackgroundColor(colorOfWinning!!)
+        displaySquareList[winSquares[1]]?.setBackgroundColor(colorOfWinning!!)
+        displaySquareList[winSquares[2]]?.setBackgroundColor(colorOfWinning!!)
     }
 
     /**
