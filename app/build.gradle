@@ -13,8 +13,8 @@ android {
         targetSdk 33
 
         // Update these next two for any release to be sent to the Play Store
-        versionCode 4
-        versionName "1.2.1"
+        versionCode 5
+        versionName "1.2.2"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }

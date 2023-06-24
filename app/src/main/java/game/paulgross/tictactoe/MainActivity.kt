@@ -10,6 +10,8 @@ import androidx.appcompat.app.AlertDialog
 
 class MainActivity : AppCompatActivity() {
 
+    private val ENABLE_SOCKET_SERVER = true
+
     /**
      * All the possible states for a square.
      */
@@ -112,11 +114,19 @@ class MainActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
 
+        if (ENABLE_SOCKET_SERVER) {
+            Log.d("DEBUG", "TODO: Disable the socket server.")
+        }
+
         saveAppState()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        if (ENABLE_SOCKET_SERVER) {
+            Log.d("DEBUG", "TODO: Enable the socket server.")
+        }
 
         setContentView(R.layout.activity_main)
 
@@ -268,6 +278,7 @@ class MainActivity : AppCompatActivity() {
 
     fun onClickNewGame(view: View) {
         // Ask user to confirm new game
+        // FIXME: The buttons on the AlertDialog have different colours to the layout.
         val builder = AlertDialog.Builder(this)
         builder.setTitle(getString(R.string.new_game_title_message))
         builder.setMessage(getString(R.string.new_game_confirm_message))
@@ -280,6 +291,7 @@ class MainActivity : AppCompatActivity() {
 
     fun onClickExitApp(view: View) {
         // Ask user to confirm exit
+        // FIXME: The buttons on the AlertDialog have different colours to the layout.
         val builder = AlertDialog.Builder(this)
         builder.setTitle(getString(R.string.exit_title_message))
         builder.setMessage(getString(R.string.exit_confirm_message))
