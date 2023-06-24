@@ -1,5 +1,6 @@
 package game.paulgross.tictactoe
 
+import android.content.res.Configuration
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
@@ -7,6 +8,7 @@ import android.view.View
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
+import java.net.ServerSocket
 
 class MainActivity : AppCompatActivity() {
 
@@ -111,11 +113,13 @@ class MainActivity : AppCompatActivity() {
         currPlayer = SquareState.valueOf(preferences.getString("CurrPlayer", "X").toString())
     }
 
+    private var socketServer: ServerSocket? = null
+
     override fun onPause() {
         super.onPause()
 
         if (ENABLE_SOCKET_SERVER) {
-            Log.d("DEBUG", "TODO: Disable the socket server.")
+            socketServer?.close()
         }
 
         saveAppState()
@@ -126,9 +130,16 @@ class MainActivity : AppCompatActivity() {
 
         if (ENABLE_SOCKET_SERVER) {
             Log.d("DEBUG", "TODO: Enable the socket server.")
+            Log.d("DEBUG", "TODO: Disable the socket server.")
+            socketServer = ServerSocket(9999)
         }
 
-        setContentView(R.layout.activity_main)
+        if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            setContentView(R.layout.activity_main_landscape)
+        } else {
+            //The default layout is portrait
+            setContentView(R.layout.activity_main)
+        }
 
         // Add all the display squares into the list.
         // NOTE: The squares MUST BE added in index order.
