@@ -9,6 +9,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import java.net.ServerSocket
+import java.net.Socket
 
 class MainActivity : AppCompatActivity() {
 
@@ -330,5 +331,9 @@ class MainActivity : AppCompatActivity() {
         }
         builder.setNegativeButton(getString(R.string.go_back_message)) { _, _ -> }
         builder.show()
+    }
+
+    class ClientHandler(client: Socket) {
+
     }
 }
