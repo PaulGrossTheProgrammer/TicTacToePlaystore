@@ -11,6 +11,7 @@ import androidx.appcompat.app.AlertDialog
 import java.io.OutputStream
 import java.net.ServerSocket
 import java.net.Socket
+import java.net.SocketException
 import java.nio.charset.Charset
 import java.util.Scanner
 import kotlin.concurrent.thread
@@ -118,36 +119,7 @@ class MainActivity : AppCompatActivity() {
         currPlayer = SquareState.valueOf(preferences.getString("CurrPlayer", "X").toString())
     }
 
-//    private var socketServer: ServerSocket? = null
     private var appPaused = false
-
-    private var server: Server? = null
-
-    class Server {
-        private var socketServer: ServerSocket? = null
-
-        init {
-            socketServer = ServerSocket(9999)
-        }
-
-        fun accept() {
-            while (true) {
-                Log.d("DEBUG", "Waiting to accept socket clients...")
-                val client = socketServer?.accept()
-
-                // TODO - create a thread for the new client
-                thread {
-                    if (client != null) {
-                        ClientHandler(client).run()
-                    }
-                }
-            }
-        }
-
-        fun close() {
-            socketServer?.close()
-        }
-    }
 
     override fun onPause() {
         super.onPause()
@@ -184,10 +156,7 @@ class MainActivity : AppCompatActivity() {
         if (ENABLE_SOCKET_SERVER) {
             Log.d("DEBUG", "TODO: Create the socket server.")
             server = Server()
-
-            // FIXME: On app close, this Socket server crashes with
-            // java.net.SocketException: Socket closed
-            // thread { server?.accept() }
+            thread { server?.accept() }
         }
 
         if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
@@ -276,15 +245,16 @@ class MainActivity : AppCompatActivity() {
             winner = grid[winSquares[0]]
             displayWinner(winner.toString())
             displayVictory(winSquares)
-
-            Toast.makeText(
-                this,
-                String.format(getString(R.string.winner_message), winner),
-                Toast.LENGTH_SHORT
-            ).show()
             return true
         }
         return false
+    }
+    private fun toastWinner() {
+        Toast.makeText(
+            this,
+            String.format(getString(R.string.winner_message), winner),
+            Toast.LENGTH_SHORT
+        ).show()
     }
 
     private fun getWinningSquares(): List<Int>? {
@@ -327,7 +297,9 @@ class MainActivity : AppCompatActivity() {
         view.text = currPlayer.toString()
 
         val winnerFound = displayAnyWin()
-        if (!winnerFound) {
+        if (winnerFound) {
+            toastWinner()
+        } else {
             // Switch to next player
             currPlayer = if (currPlayer == SquareState.X) { SquareState.O } else { SquareState.X }
             displayCurrPlayer()
@@ -369,16 +341,59 @@ class MainActivity : AppCompatActivity() {
         builder.show()
     }
 
+    /*
+       Client-Server functions start here.
+    */
+
+    private var server: Server? = null
+
+    class Server {
+        private val SERVER_PORT = 28828
+        private var socketServer: ServerSocket? = null
+
+        init {
+            socketServer = ServerSocket(SERVER_PORT)
+        }
+
+        fun accept() {
+
+            try {
+                while (true) {
+                    Log.d("DEBUG", "Waiting for client connections on port [${socketServer?.localPort}]")
+                    val client = socketServer?.accept()
+
+                    // TODO - create a thread for the new client
+                    // TODO - track the clients in a List so that they can be shut down.
+                    thread {
+                        if (client != null) {
+                            ClientHandler(client).run()
+                        }
+                    }
+                }
+            } catch (e: SocketException) {
+                Log.d("DEBUG", "Socket force closed.")
+            }
+        }
+
+        fun close() {
+            socketServer?.close()  // Forces the exit of the accept() loop with a SocketException.
+        }
+    }
+
     class ClientHandler(client: Socket) {
+        // TODO - need a new argument for the thread-safe queue for requests to the game loop.
+
         private val client: Socket = client
         private val reader: Scanner = Scanner(client.getInputStream())
         private val writer: OutputStream = client.getOutputStream()
+
+        // TODO - create a thread-safe queue for responses from the game loop.
 
         private var running: Boolean = false
         fun run() {
             running = true
             // Indicate the protocol capabilities and version
-            write("Connection now open to the server.\n")
+            write("Connection now open between client and server.\n")
 
             while (running) {
                 try {
@@ -388,7 +403,11 @@ class MainActivity : AppCompatActivity() {
                         continue
                     }
 
-                    // TODO - Queue the request to the appropriate handler.
+                    // TODO - Add requests to the game loop request queue.
+                    // Include a pointer to the response queue created by this ClientHandler.
+
+                    // TODO - wait here for the response from the response queue.
+
                 } catch (ex: Exception) {
                     // TODO: Implement exception handling
                     shutdown()
