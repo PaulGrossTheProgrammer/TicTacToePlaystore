@@ -13,6 +13,7 @@ import java.net.ServerSocket
 import java.net.Socket
 import java.nio.charset.Charset
 import java.util.Scanner
+import kotlin.concurrent.thread
 
 class MainActivity : AppCompatActivity() {
 
@@ -117,8 +118,36 @@ class MainActivity : AppCompatActivity() {
         currPlayer = SquareState.valueOf(preferences.getString("CurrPlayer", "X").toString())
     }
 
-    private var socketServer: ServerSocket? = null
+//    private var socketServer: ServerSocket? = null
     private var appPaused = false
+
+    private var server: Server? = null
+
+    class Server {
+        private var socketServer: ServerSocket? = null
+
+        init {
+            socketServer = ServerSocket(9999)
+        }
+
+        fun accept() {
+            while (true) {
+                Log.d("DEBUG", "Waiting to accept socket clients...")
+                val client = socketServer?.accept()
+
+                // TODO - create a thread for the new client
+                thread {
+                    if (client != null) {
+                        ClientHandler(client).run()
+                    }
+                }
+            }
+        }
+
+        fun close() {
+            socketServer?.close()
+        }
+    }
 
     override fun onPause() {
         super.onPause()
@@ -129,9 +158,9 @@ class MainActivity : AppCompatActivity() {
         //  Should sockets be closed later in the lifecycle?
         //  Perhaps the socket threads are created in onStart() and destroyed in onStop()?
         //  But if the App is being destroyed by the system, onStop() is never called...?
-        //  Will the system clean up the open commns sockets?
+        //  Will the system clean up the open comms sockets?
         //  If we store the list of sockets we can still close the server thread
-        //  and when onCreate is called again the list shoudl still be valid.
+        //  and when onCreate is called again the list should still be valid.
         //  Maybe track "paused" flag so clients temporarily pause comms???
         //  What happens if the user makes a move during the rotate pause?
         //  Clients need to be sent the PAUSED state
@@ -142,7 +171,7 @@ class MainActivity : AppCompatActivity() {
         //  So if the onPause is quickly resumed, the client will likely never notice.
         if (ENABLE_SOCKET_SERVER) {
             Log.d("DEBUG", "TODO: Pause or destroy the socket server.")
-            socketServer?.close()
+            server?.close()
         }
 
         saveAppState()
@@ -154,7 +183,11 @@ class MainActivity : AppCompatActivity() {
         appPaused = false  // Perhaps to re-enable paused sockets???
         if (ENABLE_SOCKET_SERVER) {
             Log.d("DEBUG", "TODO: Create the socket server.")
-            socketServer = ServerSocket(9999)
+            server = Server()
+
+            // FIXME: On app close, this Socket server crashes with
+            // java.net.SocketException: Socket closed
+            // thread { server?.accept() }
         }
 
         if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
