@@ -1,14 +1,15 @@
 package game.paulgross.tictactoe
 
 import android.content.res.Configuration
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
 import java.io.OutputStream
+import java.net.InetAddress
 import java.net.ServerSocket
 import java.net.Socket
 import java.net.SocketException
@@ -16,6 +17,7 @@ import java.nio.charset.Charset
 import java.util.Scanner
 import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.concurrent.thread
+
 
 class MainActivity : AppCompatActivity() {
 
@@ -367,6 +369,10 @@ class MainActivity : AppCompatActivity() {
 
         fun accept() {
 
+            // FIXME - I have no idea how to get the IP address to make remote connections...
+            // val ia = InetAddress.getLocalHost()
+            Log.d("DEBUG", "Server address [${socketServer?.inetAddress?.hostAddress}]")
+
             try {
                 while (true) {
                     Log.d("DEBUG", "Waiting for client connections on port [${socketServer?.localPort}]")
@@ -374,14 +380,16 @@ class MainActivity : AppCompatActivity() {
 
                     // TODO - create a thread for the new client
                     // TODO - track the clients in a List so that they can be shut down.
-                    thread {
-                        if (client != null) {
-                            ClientHandler(client).run()
-                        }
+
+                    if (client != null) {
+                        Log.d("DEBUG", "Client connected.")
+                        client.close()  // Close it for the moment. We are just testing...
+
+                        // thread { ClientHandler(client).run() }
                     }
                 }
             } catch (e: SocketException) {
-                Log.d("DEBUG", "Socket force closed.")
+                Log.d("DEBUG", "Socket forced to close.")
             }
         }
 
