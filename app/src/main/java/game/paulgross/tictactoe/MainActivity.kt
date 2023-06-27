@@ -14,6 +14,7 @@ import java.net.Socket
 import java.net.SocketException
 import java.nio.charset.Charset
 import java.util.Scanner
+import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.concurrent.thread
 
 class MainActivity : AppCompatActivity() {
@@ -346,6 +347,15 @@ class MainActivity : AppCompatActivity() {
     */
 
     private var server: Server? = null
+
+    private var mainRequestQueue: ConcurrentLinkedQueue<ClientRequest>? = null
+
+    class ClientRequest {
+        // TODO - this has to contain the request String from the client
+        // and a pointer to the reply queue.
+        val requestMessage: String? = null
+
+    }
 
     class Server {
         private val SERVER_PORT = 28828
