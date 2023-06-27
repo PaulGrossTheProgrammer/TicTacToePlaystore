@@ -1,6 +1,8 @@
 package game.paulgross.tictactoe
 
+import android.content.Context
 import android.content.res.Configuration
+import android.net.wifi.WifiManager
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -154,6 +156,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+//        val wifiManager = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+//        val ipAddress: String = wifiManager.connectionInfo.ipAddress.toString()
+//        Log.d("DEBUG", "Your Device IP Address: $ipAddress")
 
         appPaused = false  // Perhaps to re-enable paused sockets???
         if (ENABLE_SOCKET_SERVER) {
@@ -365,13 +371,18 @@ class MainActivity : AppCompatActivity() {
 
         init {
             socketServer = ServerSocket(SERVER_PORT)
+            Log.d("DEBUG", "Created Server Socket for listening")
+            Log.d("DEBUG", "Server address [${socketServer?.inetAddress}]")
+            Log.d("DEBUG", "Server address [${socketServer?.localSocketAddress}]")
+            //Log.d("DEBUG", "Server address [${socketServer?.inetAddress?.hostAddress}]")
+
         }
 
         fun accept() {
 
             // FIXME - I have no idea how to get the IP address to make remote connections...
             // val ia = InetAddress.getLocalHost()
-            Log.d("DEBUG", "Server address [${socketServer?.inetAddress?.hostAddress}]")
+
 
             try {
                 while (true) {
