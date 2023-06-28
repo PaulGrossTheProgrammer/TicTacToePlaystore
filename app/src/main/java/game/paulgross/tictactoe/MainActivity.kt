@@ -11,7 +11,6 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import java.io.OutputStream
-import java.net.InetAddress
 import java.net.ServerSocket
 import java.net.Socket
 import java.net.SocketException
@@ -164,7 +163,7 @@ class MainActivity : AppCompatActivity() {
         appPaused = false  // Perhaps to re-enable paused sockets???
         if (ENABLE_SOCKET_SERVER) {
             Log.d("DEBUG", "TODO: Create the socket server.")
-            server = Server()
+            server = Server(applicationContext)
             thread { server?.accept() }
         }
 
@@ -365,11 +364,15 @@ class MainActivity : AppCompatActivity() {
 
     }
 
-    class Server {
+    class Server(context: Context) {
         private val SERVER_PORT = 28828
         private var socketServer: ServerSocket? = null
 
         init {
+            // FIXME - I want the Wifi IP address, but this is comes from a deprecated call:
+            val wifiManager = context.getSystemService(WIFI_SERVICE) as WifiManager
+            // wifiManager.getConnectionInfo()
+
             socketServer = ServerSocket(SERVER_PORT)
             Log.d("DEBUG", "Created Server Socket for listening")
             Log.d("DEBUG", "Server address [${socketServer?.inetAddress}]")
