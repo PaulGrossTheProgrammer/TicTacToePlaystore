@@ -24,7 +24,7 @@ import kotlin.concurrent.thread
 
 class MainActivity : AppCompatActivity() {
 
-    private val ENABLE_SOCKET_SERVER = true
+    private val ENABLE_SOCKET_SERVER = false
 
     /**
      * All the possible states for a square.
@@ -168,6 +168,8 @@ class MainActivity : AppCompatActivity() {
                 Log.d("DEBUG", "Starting the socket server LEGACY CODE.")
                 startService(Intent(applicationContext, SocketServer::class.java))
             }
+        } else {
+            Log.d("DEBUG", "Socket server DISABLED.")
         }
 
         if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
