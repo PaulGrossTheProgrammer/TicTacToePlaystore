@@ -1,8 +1,10 @@
 package game.paulgross.tictactoe
 
 import android.content.Context
+import android.content.Intent
 import android.content.res.Configuration
 import android.net.wifi.WifiManager
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -147,7 +149,6 @@ class MainActivity : AppCompatActivity() {
         //  So if the onPause is quickly resumed, the client will likely never notice.
         if (ENABLE_SOCKET_SERVER) {
             Log.d("DEBUG", "TODO: Pause or destroy the socket server.")
-            server?.close()
         }
 
         saveAppState()
@@ -156,15 +157,17 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-//        val wifiManager = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-//        val ipAddress: String = wifiManager.connectionInfo.ipAddress.toString()
-//        Log.d("DEBUG", "Your Device IP Address: $ipAddress")
-
         appPaused = false  // Perhaps to re-enable paused sockets???
         if (ENABLE_SOCKET_SERVER) {
             Log.d("DEBUG", "TODO: Create the socket server.")
-            server = Server(applicationContext)
-            thread { server?.accept() }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                Log.d("DEBUG", "Starting the socket server.")
+                startForegroundService(Intent(applicationContext, SocketServer::class.java))
+            } else {
+                Log.d("DEBUG", "Starting the socket server LEGACY CODE.")
+                startService(Intent(applicationContext, SocketServer::class.java))
+            }
         }
 
         if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
