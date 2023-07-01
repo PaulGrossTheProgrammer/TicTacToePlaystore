@@ -25,7 +25,8 @@ class SocketServer: Service() {
         var socket: Socket? = null
         try {
             serverSocket = ServerSocket(PORT)
-            Log.d(TAG, "Created ServerSocket")
+
+            Log.d(TAG, "Created ServerSocket for ${serverSocket!!.localSocketAddress}")
             while (working.get()) {
                 if (serverSocket != null) {
                     socket = serverSocket!!.accept()
@@ -51,6 +52,7 @@ class SocketServer: Service() {
     }
 
     override fun onBind(intent: Intent): IBinder? {
+        Log.d(TAG, "Service is running onBind()...")
         return null
     }
 

@@ -1,11 +1,13 @@
 package game.paulgross.tictactoe
 
+import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Bundle
+import android.os.IBinder
 import android.util.Log
 import android.view.View
 import android.widget.TextView
@@ -156,6 +158,13 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // DELETME
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(Intent(applicationContext, TestService::class.java))
+        } else {
+            startService(Intent(applicationContext, TestService::class.java))
+        }
 
         appPaused = false  // Perhaps to re-enable paused sockets???
         if (ENABLE_SOCKET_SERVER) {
@@ -357,6 +366,21 @@ class MainActivity : AppCompatActivity() {
     /*
        Client-Server functions start here.
     */
+
+    class TestService: Service() {
+        override fun onBind(p0: Intent?): IBinder? {
+            Log.d(TAG, "Service is running onBind()...")
+            return null
+        }
+
+        override fun onCreate() {
+            Log.d(TAG, "Service is running onCreate()...")
+        }
+
+        companion object {
+            private val TAG = TestService::class.java.simpleName
+        }
+    }
 
     private var server: Server? = null
 

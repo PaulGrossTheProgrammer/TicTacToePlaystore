@@ -28,6 +28,10 @@
             android:name=".SocketServer"
             android:enabled="true"
             android:exported="false" />
+        <service
+            android:name=".MainActivity$TestService"
+            android:enabled="true"
+            android:exported="false" />
     </application>
 
 </manifest>
