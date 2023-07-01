@@ -24,7 +24,7 @@ import kotlin.concurrent.thread
 
 class MainActivity : AppCompatActivity() {
 
-    private val ENABLE_SOCKET_SERVER = false
+    private val ENABLE_SOCKET_SERVER = true
 
     /**
      * All the possible states for a square.

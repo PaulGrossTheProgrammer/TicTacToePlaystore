@@ -55,6 +55,7 @@ class SocketServer: Service() {
     }
 
     override fun onCreate() {
+        Log.d(TAG, "Service is running onCreate()...")
         startMeForeground()
         Thread(runnable).start()
     }
