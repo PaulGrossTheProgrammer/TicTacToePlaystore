@@ -10,9 +10,10 @@ class SocketClientHandler(private val dataInputStream: DataInputStream, private 
         while (true) {
             try {
                 if(dataInputStream.available() > 0){
+                    // FIXME: This gives an exception when the Python socket client runs.
                     Log.i(TAG, "Received: " + dataInputStream.readUTF())
-                    dataOutputStream.writeUTF("Hello Client")
-                    sleep(2000L)
+                    // dataOutputStream.writeUTF("Hello Client")
+                    sleep(2000L) // WHY???
                 }
             } catch (e: IOException) {
                 e.printStackTrace()

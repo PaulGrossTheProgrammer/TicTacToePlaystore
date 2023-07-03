@@ -26,7 +26,7 @@ import kotlin.concurrent.thread
 
 class MainActivity : AppCompatActivity() {
 
-    private val ENABLE_SOCKET_SERVER = false
+    private val ENABLE_SOCKET_SERVER = true
 
     /**
      * All the possible states for a square.
@@ -159,28 +159,10 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // DELETME
-/*        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(Intent(applicationContext, TestService::class.java))
-        } else {
-            startService(Intent(applicationContext, TestService::class.java))
-        }*/
-        startService(Intent(applicationContext, TestService::class.java))
-
-        Log.d("DEBUG", "Starting the socket server LEGACY CODE.")
-        startService(Intent(applicationContext, SocketServer::class.java))
-
         appPaused = false  // Perhaps to re-enable paused sockets???
         if (ENABLE_SOCKET_SERVER) {
-            Log.d("DEBUG", "TODO: Create the socket server.")
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                Log.d("DEBUG", "Starting the socket server.")
-                startForegroundService(Intent(applicationContext, SocketServer::class.java))
-            } else {
-                Log.d("DEBUG", "Starting the socket server LEGACY CODE.")
-                startService(Intent(applicationContext, SocketServer::class.java))
-            }
+            Log.d("DEBUG", "Starting the socket server.")
+            startService(Intent(applicationContext, SocketServer::class.java))
         } else {
             Log.d("DEBUG", "Socket server DISABLED.")
         }
@@ -367,129 +349,4 @@ class MainActivity : AppCompatActivity() {
         builder.show()
     }
 
-    /*
-       Client-Server functions start here.
-    */
-
-    class TestService: Service() {
-        override fun onBind(p0: Intent?): IBinder? {
-            Log.d(TAG, "Service is running onBind()...")
-            return null
-        }
-
-        override fun onCreate() {
-            Log.d(TAG, "Service is running onCreate()...")
-        }
-
-        companion object {
-            private val TAG = TestService::class.java.simpleName
-        }
-    }
-
-    private var server: Server? = null
-
-    private var mainRequestQueue: ConcurrentLinkedQueue<ClientRequest>? = null
-
-    class ClientRequest {
-        // TODO - this has to contain the request String from the client
-        // and a pointer to the reply queue.
-        val requestMessage: String? = null
-
-    }
-
-    class Server(context: Context) {
-        private val SERVER_PORT = 28828
-        private var socketServer: ServerSocket? = null
-
-        init {
-            // FIXME - I want the Wifi IP address, but this is comes from a deprecated call:
-            val wifiManager = context.getSystemService(WIFI_SERVICE) as WifiManager
-            // wifiManager.getConnectionInfo()
-
-            socketServer = ServerSocket(SERVER_PORT)
-            Log.d("DEBUG", "Created Server Socket for listening")
-            Log.d("DEBUG", "Server address [${socketServer?.inetAddress}]")
-            Log.d("DEBUG", "Server address [${socketServer?.localSocketAddress}]")
-            //Log.d("DEBUG", "Server address [${socketServer?.inetAddress?.hostAddress}]")
-
-        }
-
-        fun accept() {
-
-            // FIXME - I have no idea how to get the IP address to make remote connections...
-            // val ia = InetAddress.getLocalHost()
-
-
-            try {
-                while (true) {
-                    Log.d("DEBUG", "Waiting for client connections on port [${socketServer?.localPort}]")
-                    val client = socketServer?.accept()
-
-                    // TODO - create a thread for the new client
-                    // TODO - track the clients in a List so that they can be shut down.
-
-                    if (client != null) {
-                        Log.d("DEBUG", "Client connected.")
-                        client.close()  // Close it for the moment. We are just testing...
-
-                        // thread { ClientHandler(client).run() }
-                    }
-                }
-            } catch (e: SocketException) {
-                Log.d("DEBUG", "Socket forced to close.")
-            }
-        }
-
-        fun close() {
-            socketServer?.close()  // Forces the exit of the accept() loop with a SocketException.
-        }
-    }
-
-    class ClientHandler(client: Socket) {
-        // TODO - need a new argument for the thread-safe queue for requests to the game loop.
-
-        private val client: Socket = client
-        private val reader: Scanner = Scanner(client.getInputStream())
-        private val writer: OutputStream = client.getOutputStream()
-
-        // TODO - create a thread-safe queue for responses from the game loop.
-
-        private var running: Boolean = false
-        fun run() {
-            running = true
-            // Indicate the protocol capabilities and version
-            write("Connection now open between client and server.\n")
-
-            while (running) {
-                try {
-                    val text = reader.nextLine()
-                    if (text == "PROTOCOL:CLOSE") {
-                        shutdown()
-                        continue
-                    }
-
-                    // TODO - Add requests to the game loop request queue.
-                    // Include a pointer to the response queue created by this ClientHandler.
-
-                    // TODO - wait here for the response from the response queue.
-
-                } catch (ex: Exception) {
-                    // TODO: Implement exception handling
-                    shutdown()
-                } finally {
-
-                }
-            }
-        }
-
-        private fun write(message: String) {
-            writer.write((message + '\n').toByteArray(Charset.defaultCharset()))
-        }
-
-        private fun shutdown() {
-            running = false
-            client.close()
-            println("${client.inetAddress.hostAddress} closed the connection")
-        }
-    }
 }
