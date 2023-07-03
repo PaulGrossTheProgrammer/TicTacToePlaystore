@@ -26,7 +26,7 @@ import kotlin.concurrent.thread
 
 class MainActivity : AppCompatActivity() {
 
-    private val ENABLE_SOCKET_SERVER = true
+    private val ENABLE_SOCKET_SERVER = false
 
     /**
      * All the possible states for a square.
@@ -160,11 +160,15 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         // DELETME
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+/*        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(Intent(applicationContext, TestService::class.java))
         } else {
             startService(Intent(applicationContext, TestService::class.java))
-        }
+        }*/
+        startService(Intent(applicationContext, TestService::class.java))
+
+        Log.d("DEBUG", "Starting the socket server LEGACY CODE.")
+        startService(Intent(applicationContext, SocketServer::class.java))
 
         appPaused = false  // Perhaps to re-enable paused sockets???
         if (ENABLE_SOCKET_SERVER) {

@@ -27,6 +27,8 @@ class SocketServer: Service() {
             serverSocket = ServerSocket(PORT)
 
             Log.d(TAG, "Created ServerSocket for ${serverSocket!!.localSocketAddress}")
+            Log.d(TAG, "Created ServerSocket for ${serverSocket!!.inetAddress.hostAddress}")
+
             while (working.get()) {
                 if (serverSocket != null) {
                     socket = serverSocket!!.accept()
