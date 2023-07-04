@@ -32,9 +32,11 @@ class SocketClientHandler(private val dataInputStream: DataInputStream, private 
                     // Log.i(TAG, "Received: $receivedData")
                     dataOutputStream.writeUTF("Hello Client")
 
-                    running = false
+                    if (data == "bye") {
+                        running = false
+                    }
                 }
-                sleep(2000L) // WHY???
+                sleep(1000L) // WHY???
             } catch (e: IOException) {
                 running = false
                 e.printStackTrace()
