@@ -162,7 +162,9 @@ class MainActivity : AppCompatActivity() {
         appPaused = false  // Perhaps to re-enable paused sockets???
         if (ENABLE_SOCKET_SERVER) {
             Log.d("DEBUG", "Starting the socket server.")
-            startService(Intent(applicationContext, SocketServer::class.java))
+
+            var service = startService(Intent(applicationContext, SocketServer::class.java))
+
         } else {
             Log.d("DEBUG", "Socket server DISABLED.")
         }
@@ -196,6 +198,12 @@ class MainActivity : AppCompatActivity() {
         displayGrid()
         displayCurrPlayer()
         displayAnyWin()
+    }
+
+    override fun onStop() {
+        super.onStop()
+
+        stopService(Intent(applicationContext, SocketServer::class.java))
     }
 
     private fun resetGridState() {
