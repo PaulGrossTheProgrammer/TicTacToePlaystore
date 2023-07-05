@@ -2,24 +2,30 @@ package game.paulgross.tictactoe
 
 import android.util.Log
 import java.io.BufferedReader
+import java.io.BufferedWriter
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.io.IOException
 import java.io.InputStreamReader
+import java.io.OutputStreamWriter
 
 
 class SocketClientHandler(private val dataInputStream: DataInputStream, private val dataOutputStream: DataOutputStream) : Thread() {
     override fun run() {
-        val d = BufferedReader(InputStreamReader(dataInputStream))
+        val input = BufferedReader(InputStreamReader(dataInputStream))
+        val output = BufferedWriter(OutputStreamWriter(dataOutputStream))
 
         Log.d(TAG, "New client connection handler started ...")
         var running = true
         while (running) {
             try {
                 Log.d(TAG, "Waiting for client data ...")
-                val data = d.readLine()  // Blocking read - wait here for new client data
-                Log.d(TAG, "Got data = $data")
-                dataOutputStream.writeUTF("Hello Client. You said \"$data\"")
+                // Blocking read - wait here for new client data
+                val data = input.readLine()
+                Log.d(TAG, "Got data = [$data]")
+
+                output.write("Hello Client. You said \"$data\"")
+                output.flush()
 
                 if (data == "bye") {
                     running = false
