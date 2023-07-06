@@ -1,27 +1,17 @@
 package game.paulgross.tictactoe
 
-import android.app.Service
-import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
-import android.net.wifi.WifiManager
-import android.os.Build
 import android.os.Bundle
-import android.os.IBinder
 import android.util.Log
 import android.view.View
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import java.io.OutputStream
-import java.net.ServerSocket
-import java.net.Socket
-import java.net.SocketException
-import java.nio.charset.Charset
-import java.util.Scanner
+import java.util.Queue
 import java.util.concurrent.ConcurrentLinkedQueue
-import kotlin.concurrent.thread
+import java.util.concurrent.atomic.AtomicBoolean
 
 
 class MainActivity : AppCompatActivity() {
@@ -76,6 +66,9 @@ class MainActivity : AppCompatActivity() {
     private var colorOfWinning: Int? = null
 
     private var textPlayerView: TextView? = null
+
+
+//    var socketRequestQ: Queue<String> = ConcurrentLinkedQueue()
 
 
     /**
@@ -164,6 +157,7 @@ class MainActivity : AppCompatActivity() {
             Log.d("DEBUG", "Starting the socket server.")
 
             var service = startService(Intent(applicationContext, SocketServer::class.java))
+            startService(Intent(applicationContext, GameServer::class.java))
 
         } else {
             Log.d("DEBUG", "Socket server DISABLED.")
@@ -356,5 +350,4 @@ class MainActivity : AppCompatActivity() {
         builder.setNegativeButton(getString(R.string.go_back_message)) { _, _ -> }
         builder.show()
     }
-
 }

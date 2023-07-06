@@ -8,9 +8,10 @@ import java.io.DataOutputStream
 import java.io.IOException
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
+import java.util.Queue
 
 
-class SocketClientHandler(private val dataInputStream: DataInputStream, private val dataOutputStream: DataOutputStream) : Thread() {
+class SocketClientHandler(private val dataInputStream: DataInputStream, private val dataOutputStream: DataOutputStream, private val gameRequestQ: Queue<String>) : Thread() {
     override fun run() {
         val input = BufferedReader(InputStreamReader(dataInputStream))
         val output = BufferedWriter(OutputStreamWriter(dataOutputStream))
@@ -24,12 +25,16 @@ class SocketClientHandler(private val dataInputStream: DataInputStream, private 
                 val data = input.readLine()
                 Log.d(TAG, "Got data = [$data]")
 
+                // FIXME - crashes here, null pointer, if client suddenly closes connection.
+                gameRequestQ.add(data)
+
                 output.write("Hello Client. You said \"$data\"")
                 output.flush()
 
                 if (data == "bye") {
                     running = false
                 }
+
             } catch (e: IOException) {
                 running = false
                 e.printStackTrace()

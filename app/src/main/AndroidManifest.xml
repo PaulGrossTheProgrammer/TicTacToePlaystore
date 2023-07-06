@@ -26,7 +26,7 @@
             </intent-filter>
         </activity>
         <service
-            android:name=".SocketServer"
+            android:name=".GameServer"
             android:enabled="true"
             android:exported="false" />
     </application>
