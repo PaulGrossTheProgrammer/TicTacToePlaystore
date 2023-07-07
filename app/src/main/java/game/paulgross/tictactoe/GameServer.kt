@@ -33,6 +33,7 @@ class GameServer: Service() {
 
                 // TODO - make a test change to the model and UI.
                 // TODO - get a reference to MainActivity
+                // MAybe use a Broadcast receiver in MainActivity?
 //                MainActivity.remotePlaySquare(1, "X")
 
                 // TODO - need the response queue to return data to client thread.
