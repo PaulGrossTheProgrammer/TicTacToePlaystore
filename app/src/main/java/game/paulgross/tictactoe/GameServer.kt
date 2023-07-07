@@ -31,10 +31,10 @@ class GameServer: Service() {
                 Log.d(TAG, "Got a request!!!")
                 Log.d(TAG, "[$clientData]")
 
-                // TODO - make a test change to the model and UI.
-                // TODO - get a reference to MainActivity
-                // MAybe use a Broadcast receiver in MainActivity?
-//                MainActivity.remotePlaySquare(1, "X")
+                val intent = Intent()
+                intent.action = packageName + "client.REQUEST"
+                intent.putExtra("Request", clientData)
+                sendBroadcast(intent)
 
                 // TODO - need the response queue to return data to client thread.
 

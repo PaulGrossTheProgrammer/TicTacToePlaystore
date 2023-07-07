@@ -1,6 +1,9 @@
 package game.paulgross.tictactoe
 
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.res.Configuration
 import android.os.Bundle
 import android.util.Log
@@ -9,9 +12,6 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import java.util.Queue
-import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.atomic.AtomicBoolean
 
 
 class MainActivity : AppCompatActivity() {
@@ -123,6 +123,7 @@ class MainActivity : AppCompatActivity() {
     private var appPaused = false
 
     override fun onPause() {
+        unregisterReceiver(gameMessageReceiver)
         super.onPause()
 
         appPaused = true
@@ -154,9 +155,13 @@ class MainActivity : AppCompatActivity() {
 
         appPaused = false  // Perhaps to re-enable paused sockets???
         if (ENABLE_SOCKET_SERVER) {
+            // TODO: Will this work to get messages from GameServer???
+            val intentFilter = IntentFilter()
+            intentFilter.addAction(packageName + "client.REQUEST")
+            registerReceiver(gameMessageReceiver, intentFilter)
+
             Log.d("DEBUG", "Starting the socket server.")
 
-//            var service = startService(Intent(applicationContext, SocketServer::class.java))
             startService(Intent(applicationContext, GameServer::class.java))
 
         } else {
@@ -384,5 +389,23 @@ class MainActivity : AppCompatActivity() {
         builder.show()
     }
 
+    /*
+        Receive messages from socket client.
+     */
+    private val gameMessageReceiver: BroadcastReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
 
+            Log.d("DEBUG_RECV", "Received an intent")
+            Log.d("DEBUG_RECV", intent.toString())
+            val request = intent.getStringExtra("Request")
+            Log.d("DEBUG_RECV", "Request =[$request]")
+
+            if (request?.startsWith("PLAY:", true)!!) {
+                val indexString = request.substring(6..6)
+                val gridIndex = Integer.valueOf(indexString)
+                playSquare(gridIndex, SquareState.O)
+            }
+
+        }
+    }
 }
