@@ -1,23 +1,12 @@
 package game.paulgross.tictactoe
 
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.Service
-import android.content.Context
-import android.content.Intent
-import android.graphics.Color
-import android.os.Build
-import android.os.IBinder
 import android.util.Log
-import androidx.core.app.NotificationCompat
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.io.IOException
 import java.net.ServerSocket
 import java.net.Socket
 import java.util.Queue
-import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicBoolean
 
 class SocketServer(private val gameRequestQ: Queue<String>): Thread() {
@@ -34,7 +23,8 @@ class SocketServer(private val gameRequestQ: Queue<String>): Thread() {
 
             while (working.get()) {
                 if (serverSocket != null) {
-                    socket = serverSocket!!.accept()  // Does this block???
+                    Log.i(TAG, "Waiting for new client sockets...")
+                    socket = serverSocket!!.accept()
                     Log.i(TAG, "New client: $socket")
                     val dataInputStream = DataInputStream(socket.getInputStream())
                     val dataOutputStream = DataOutputStream(socket.getOutputStream())
@@ -47,8 +37,6 @@ class SocketServer(private val gameRequestQ: Queue<String>): Thread() {
                 } else {
                     Log.e(TAG, "Couldn't create ServerSocket!")
                 }
-
-
             }
         } catch (e: IOException) {
             e.printStackTrace()

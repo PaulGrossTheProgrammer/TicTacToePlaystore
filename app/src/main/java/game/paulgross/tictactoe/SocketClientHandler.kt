@@ -25,8 +25,10 @@ class SocketClientHandler(private val dataInputStream: DataInputStream, private 
                 val data = input.readLine()
                 Log.d(TAG, "Got data = [$data]")
 
-                // FIXME - crashes here, null pointer, if client suddenly closes connection.
+                // FIXME - crashes here, null pointer, if client suddenly closes socket.
                 gameRequestQ.add(data)
+
+                // TODO - wait here for the GameService to respond to the request.
 
                 output.write("Hello Client. You said \"$data\"")
                 output.flush()

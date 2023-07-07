@@ -8,14 +8,12 @@ import java.util.Queue
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicBoolean
 
-class GameServer: Service() {
+class GameService : Service() {
 
-    // TODO - create main thread, with request queue,
-    //  and then create the socket server thread passing the request queue.
+    // TODO
     // The Socket Server thread creates client handler threads, passing the que to them too.
     // When a client needs work done, the request queue is added to by the client handler
     // This Service listens to the request queue, and interacts with the Activity as required.
-    // Including updating the user's display of the game.
     private val gameRequestQ: Queue<String> = ConcurrentLinkedQueue()
 
     private val working = AtomicBoolean(true)
@@ -24,22 +22,28 @@ class GameServer: Service() {
         SocketServer(gameRequestQ).start()
 
         while (working.get()) {
-//            Log.d(TAG, "This is the game Thread reporting for duty!")
 
             val clientData = gameRequestQ.poll()  // Non-blocking read for client requests.
             if (clientData != null) {
-                Log.d(TAG, "Got a request!!!")
                 Log.d(TAG, "[$clientData]")
 
-                val intent = Intent()
-                intent.action = packageName + "client.REQUEST"
-                intent.putExtra("Request", clientData)
-                sendBroadcast(intent)
+                if (clientData == "exit") {
+                    // TODO - remove queue because the client has closed the connection.
+                } else {
+                    val intent = Intent()
+                    intent.action = packageName + "client.REQUEST"
+                    intent.putExtra("Request", clientData)
+                    sendBroadcast(intent)
 
-                // TODO - need the response queue to return data to client thread.
+                    // TODO - need to figure out how to query game state.
+                    // Maybe store game state here
+                    // And figure out how the Activity calls this class.
 
+                    // TODO - need the response queue to return state to client thread.
+
+                }
             }
-            Thread.sleep(1000L)  // Pause for a while...
+            Thread.sleep(100L)  // Pause for a while...
 
             // If the game is a player, then this is where the AI is coded.
         }
@@ -50,7 +54,7 @@ class GameServer: Service() {
     }
 
     override fun onBind(p0: Intent?): IBinder? {
-        Log.d(GameServer.TAG, "Service is running onBind()...")
+        Log.d(TAG, "Service is running onBind()...")
         return null
     }
 
@@ -60,7 +64,9 @@ class GameServer: Service() {
     }
 
     companion object {
-        private val TAG = GameServer::class.java.simpleName
+        private val TAG = GameService::class.java.simpleName
+
+        // Maybe put the state in here so that it can be queried from Activity???
     }
 
 }

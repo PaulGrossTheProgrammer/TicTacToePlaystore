@@ -162,7 +162,7 @@ class MainActivity : AppCompatActivity() {
 
             Log.d("DEBUG", "Starting the socket server.")
 
-            startService(Intent(applicationContext, GameServer::class.java))
+            startService(Intent(applicationContext, GameService::class.java))
 
         } else {
             Log.d("DEBUG", "Socket server DISABLED.")
@@ -202,16 +202,10 @@ class MainActivity : AppCompatActivity() {
     override fun onStop() {
         super.onStop()
 
-        stopService(Intent(applicationContext, GameServer::class.java))
+        stopService(Intent(applicationContext, GameService::class.java))
     }
 
-    fun remotePlaySquare(i: Int, s: String) {
-        runOnUiThread {
-            playSquare(1, SquareState.X)
-        }
-    }
-
-    private fun playSquare(gridIndex: Int, state: SquareState) {
+    private fun playSquare(gridIndex: Int) {
         // TODO - return true/false for change made
         // TODO - call this from local GUI and from client socket handler
 
@@ -324,6 +318,7 @@ class MainActivity : AppCompatActivity() {
      *  Handler for when the User clicks a square in the playing grid.
      */
     fun onClickPlaySquare(view: View) {
+        // TODO - integrate properly with playSquare()
         if (winner != SquareState.E) {
             return // No more moves after a win
         }
@@ -389,23 +384,21 @@ class MainActivity : AppCompatActivity() {
         builder.show()
     }
 
-    /*
-        Receive messages from socket client.
+    /**
+        Receive messages from socket client handler.
      */
     private val gameMessageReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-
-            Log.d("DEBUG_RECV", "Received an intent")
-            Log.d("DEBUG_RECV", intent.toString())
             val request = intent.getStringExtra("Request")
             Log.d("DEBUG_RECV", "Request =[$request]")
 
-            if (request?.startsWith("PLAY:", true)!!) {
-                val indexString = request.substring(6..6)
-                val gridIndex = Integer.valueOf(indexString)
-                playSquare(gridIndex, SquareState.O)
-            }
+            // TODO - check that client player matches current player
 
+            if (request?.startsWith("PLAY", true)!!) {
+                val indexString = request.substring(4..4)
+                val gridIndex = Integer.valueOf(indexString)
+                playSquare(gridIndex)
+            }
         }
     }
 }
