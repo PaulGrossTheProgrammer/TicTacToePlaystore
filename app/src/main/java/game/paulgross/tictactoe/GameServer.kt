@@ -26,12 +26,21 @@ class GameServer: Service() {
         while (working.get()) {
 //            Log.d(TAG, "This is the game Thread reporting for duty!")
 
-            val clientData = gameRequestQ.poll()
+            val clientData = gameRequestQ.poll()  // Non-blocking read for client requests.
             if (clientData != null) {
                 Log.d(TAG, "Got a request!!!")
                 Log.d(TAG, "[$clientData]")
+
+                // TODO - make a test change to the model and UI.
+                // TODO - get a reference to MainActivity
+//                MainActivity.remotePlaySquare(1, "X")
+
+                // TODO - need the response queue to return data to client thread.
+
             }
             Thread.sleep(1000L)  // Pause for a while...
+
+            // If the game is a player, then this is where the AI is coded.
         }
     }
 

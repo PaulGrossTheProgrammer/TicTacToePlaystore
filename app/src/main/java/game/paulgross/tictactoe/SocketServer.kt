@@ -31,16 +31,17 @@ class SocketServer(private val gameRequestQ: Queue<String>): Thread() {
             serverSocket = ServerSocket(PORT)
 
             Log.d(TAG, "Created ServerSocket for ${serverSocket!!.localSocketAddress}")
-            Log.d(TAG, "Created ServerSocket for ${serverSocket!!.inetAddress.hostAddress}")
 
             while (working.get()) {
                 if (serverSocket != null) {
-                    socket = serverSocket!!.accept()
+                    socket = serverSocket!!.accept()  // Does this block???
                     Log.i(TAG, "New client: $socket")
                     val dataInputStream = DataInputStream(socket.getInputStream())
                     val dataOutputStream = DataOutputStream(socket.getOutputStream())
 
                     // Use threads for each client to communicate with them simultaneously
+                    // TODO - create a return queue for the client handler to get the response.
+                    // One queue per client thread
                     val t: Thread = SocketClientHandler(dataInputStream, dataOutputStream, gameRequestQ)
                     t.start()
                 } else {

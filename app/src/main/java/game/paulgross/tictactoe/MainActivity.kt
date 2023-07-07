@@ -156,7 +156,7 @@ class MainActivity : AppCompatActivity() {
         if (ENABLE_SOCKET_SERVER) {
             Log.d("DEBUG", "Starting the socket server.")
 
-            var service = startService(Intent(applicationContext, SocketServer::class.java))
+//            var service = startService(Intent(applicationContext, SocketServer::class.java))
             startService(Intent(applicationContext, GameServer::class.java))
 
         } else {
@@ -197,7 +197,40 @@ class MainActivity : AppCompatActivity() {
     override fun onStop() {
         super.onStop()
 
-        stopService(Intent(applicationContext, SocketServer::class.java))
+        stopService(Intent(applicationContext, GameServer::class.java))
+    }
+
+    fun remotePlaySquare(i: Int, s: String) {
+        runOnUiThread {
+            playSquare(1, SquareState.X)
+        }
+    }
+
+    private fun playSquare(gridIndex: Int, state: SquareState) {
+        // TODO - return true/false for change made
+        // TODO - call this from local GUI and from client socket handler
+
+        if (winner != SquareState.E) {
+            return // No more moves after a win
+        }
+
+        if (grid[gridIndex] != SquareState.E) {
+            return  // Can only change Empty squares
+        }
+
+        // Update the square's state
+        grid[gridIndex] = currPlayer
+
+        displayGrid()
+
+        val winnerFound = displayAnyWin()
+        if (winnerFound) {
+            toastWinner()
+        } else {
+            // Switch to next player
+            currPlayer = if (currPlayer == SquareState.X) { SquareState.O } else { SquareState.X }
+            displayCurrPlayer()
+        }
     }
 
     private fun resetGridState() {
@@ -350,4 +383,6 @@ class MainActivity : AppCompatActivity() {
         builder.setNegativeButton(getString(R.string.go_back_message)) { _, _ -> }
         builder.show()
     }
+
+
 }
