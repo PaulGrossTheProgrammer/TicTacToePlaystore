@@ -36,8 +36,10 @@ class GameService : Service() {
                     sendBroadcast(intent)
 
                     // TODO - need to figure out how to query game state.
-                    // Maybe store game state here
+                    // Maybe store game state in a Companion Object here...?
                     // And figure out how the Activity calls this class.
+//                    SquareState.O
+//                    testComp()
 
                     // TODO - need the response queue to return state to client thread.
 
@@ -67,6 +69,32 @@ class GameService : Service() {
         private val TAG = GameService::class.java.simpleName
 
         // Maybe put the state in here so that it can be queried from Activity???
+        enum class SquareState {
+            /** Empty square */
+            E,
+
+            /** "X" square  */
+            X,
+
+            /** "O" square */
+            O
+        }
+
+        /**
+         * The playing grid.
+         */
+        private var grid: Array<SquareState> = arrayOf(
+            SquareState.E, SquareState.E, SquareState.E,
+            SquareState.E, SquareState.E, SquareState.E,
+            SquareState.E, SquareState.E, SquareState.E
+        )
+
+        private var currPlayer: SquareState = SquareState.X
+        private var winner = SquareState.E
+
+        fun testComp() {
+            // This is just a test...
+        }
     }
 
 }

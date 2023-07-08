@@ -67,10 +67,6 @@ class MainActivity : AppCompatActivity() {
 
     private var textPlayerView: TextView? = null
 
-
-//    var socketRequestQ: Queue<String> = ConcurrentLinkedQueue()
-
-
     /**
      * Dump out the current grid state into the debug log.
      */
@@ -152,6 +148,12 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // This is the syntax for referring to GameService companion object
+/*
+        GameService.Companion.SquareState.O
+        GameService.testComp()
+*/
 
         appPaused = false  // Perhaps to re-enable paused sockets???
         if (ENABLE_SOCKET_SERVER) {
