@@ -83,17 +83,46 @@ class GameService : Service() {
         /**
          * The playing grid.
          */
-        private var grid: Array<SquareState> = arrayOf(
+        var grid: Array<SquareState> = arrayOf(
             SquareState.E, SquareState.E, SquareState.E,
             SquareState.E, SquareState.E, SquareState.E,
             SquareState.E, SquareState.E, SquareState.E
         )
 
-        private var currPlayer: SquareState = SquareState.X
-        private var winner = SquareState.E
+        var currPlayer: SquareState = SquareState.X
+        var winner = SquareState.E
 
-        fun testComp() {
-            // This is just a test...
+        private val allPossibleWinCombinations: List<List<Int>> = listOf(
+            listOf(0, 1, 2),
+            listOf(3, 4, 5),
+            listOf(6, 7, 8),
+
+            listOf(0, 3, 6),
+            listOf(1, 4, 7),
+            listOf(2, 5, 8),
+
+            listOf(0, 4, 8),
+            listOf(2, 4, 6)
+        )
+        fun getWinningSquares(): List<Int>? {
+            allPossibleWinCombinations.forEach{ possibleWin ->
+                if (grid[possibleWin[0]] != SquareState.E
+                    &&
+                    grid[possibleWin[0]] == grid[possibleWin[1]]
+                    &&
+                    grid[possibleWin[0]] == grid[possibleWin[2]]) {
+                    return possibleWin  // Found a winner
+                }
+            }
+            return null
+        }
+
+        fun resetGame() {
+            for (i in 0..8) {
+                grid[i] = SquareState.E
+            }
+            winner = Companion.SquareState.E
+            currPlayer = Companion.SquareState.X
         }
     }
 

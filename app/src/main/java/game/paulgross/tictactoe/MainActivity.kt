@@ -18,48 +18,6 @@ class MainActivity : AppCompatActivity() {
 
     private val ENABLE_SOCKET_SERVER = true
 
-    /**
-     * All the possible states for a square.
-     */
-    enum class SquareState {
-        /** Empty square */
-        E,
-
-        /** "X" square  */
-        X,
-
-        /** "O" square */
-        O
-    }
-
-    /**
-     * The playing grid.
-     *
-     * Initially empty.
-     */
-    private var grid: Array<SquareState> = arrayOf(
-        SquareState.E, SquareState.E, SquareState.E,
-        SquareState.E, SquareState.E, SquareState.E,
-        SquareState.E, SquareState.E, SquareState.E
-    )
-
-    // State variables
-    private var currPlayer: SquareState = SquareState.X
-    private var winner = SquareState.E
-
-    private val allPossibleWinCombinations: List<List<Int>> = listOf(
-        listOf(0, 1, 2),
-        listOf(3, 4, 5),
-        listOf(6, 7, 8),
-
-        listOf(0, 3, 6),
-        listOf(1, 4, 7),
-        listOf(2, 5, 8),
-
-        listOf(0, 4, 8),
-        listOf(2, 4, 6)
-    )
-
     private var displaySquareList: MutableList<TextView?> = mutableListOf()
 
     private var colorOfReset: Int? = null
@@ -70,12 +28,12 @@ class MainActivity : AppCompatActivity() {
     /**
      * Dump out the current grid state into the debug log.
      */
-    private fun debugGrid() {
+/*    private fun debugGrid() {
         Log.d("DEBUG", "GRID:")
         Log.d("DEBUG", "${grid[0]} ${grid[1]} ${grid[2]}")
         Log.d("DEBUG", "${grid[3]} ${grid[4]} ${grid[5]}")
         Log.d("DEBUG", "${grid[6]} ${grid[7]} ${grid[8]}")
-    }
+    }*/
 
     /**
      * Saves the current App state.
@@ -88,10 +46,10 @@ class MainActivity : AppCompatActivity() {
 
         // Save the grid state.
         for (i in 0..8) {
-            editor.putString("Grid$i", grid[i].toString())
+            editor.putString("Grid$i", GameService.grid[i].toString())
         }
 
-        editor.putString("CurrPlayer", currPlayer.toString())
+        editor.putString("CurrPlayer", GameService.currPlayer.toString())
 
         editor.apply()
     }
@@ -108,12 +66,12 @@ class MainActivity : AppCompatActivity() {
         // Load the previous grid state. Default to Empty if nothing was saved before.
         for (i in 0..8) {
             val currState = preferences.getString("Grid$i", "E").toString()
-            grid[i] = SquareState.valueOf(currState)
+            GameService.grid[i] = GameService.Companion.SquareState.valueOf(currState)
         }
-        debugGrid()
+//        debugGrid()
 
         // If there is no current player to restore, default to "X"
-        currPlayer = SquareState.valueOf(preferences.getString("CurrPlayer", "X").toString())
+        GameService.currPlayer = GameService.Companion.SquareState.valueOf(preferences.getString("CurrPlayer", "X").toString())
     }
 
     private var appPaused = false
@@ -148,12 +106,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // This is the syntax for referring to GameService companion object
-/*
-        GameService.Companion.SquareState.O
-        GameService.testComp()
-*/
 
         appPaused = false  // Perhaps to re-enable paused sockets???
         if (ENABLE_SOCKET_SERVER) {
@@ -197,7 +149,7 @@ class MainActivity : AppCompatActivity() {
         restoreAppState()
 
         displayGrid()
-        displayCurrPlayer()
+        displayCurrPlayer(GameService.currPlayer.toString())
         displayAnyWin()
     }
 
@@ -211,16 +163,16 @@ class MainActivity : AppCompatActivity() {
         // TODO - return true/false for change made
         // TODO - call this from local GUI and from client socket handler
 
-        if (winner != SquareState.E) {
+        if (GameService.winner != GameService.Companion.SquareState.E) {
             return // No more moves after a win
         }
 
-        if (grid[gridIndex] != SquareState.E) {
+        if (GameService.grid[gridIndex] != GameService.Companion.SquareState.E) {
             return  // Can only change Empty squares
         }
 
-        // Update the square's state
-        grid[gridIndex] = currPlayer
+        // TODO: Update the square's state - replace with GameServer objects.
+        GameService.Companion.grid[gridIndex] = GameService.currPlayer
 
         displayGrid()
 
@@ -229,25 +181,14 @@ class MainActivity : AppCompatActivity() {
             toastWinner()
         } else {
             // Switch to next player
-            currPlayer = if (currPlayer == SquareState.X) { SquareState.O } else { SquareState.X }
-            displayCurrPlayer()
+            GameService.currPlayer = if (GameService.currPlayer == GameService.Companion.SquareState.X) {
+                GameService.Companion.SquareState.O
+            } else {
+                GameService.Companion.SquareState.X
+            }
+            displayCurrPlayer(GameService.currPlayer.toString())
         }
     }
-
-    private fun resetGridState() {
-        for (i in 0..8) {
-            grid[i] = SquareState.E
-        }
-    }
-
-    private fun resetGame() {
-        resetGridState()
-        resetGridDisplay()
-        winner = SquareState.E
-        currPlayer = SquareState.X
-        displayCurrPlayer()
-    }
-
 
     /*
         User Interface functions start here.
@@ -259,10 +200,10 @@ class MainActivity : AppCompatActivity() {
      */
     private fun displayGrid() {
         for (i in 0..8) {
-            val state = grid[i]
+            val state = GameService.grid[i]
             val view = displaySquareList[i]
 
-            if (state == SquareState.E) {
+            if (state == GameService.Companion.SquareState.E) {
                 view?.text = ""
             } else {
                 view?.text = state.toString()
@@ -284,10 +225,10 @@ class MainActivity : AppCompatActivity() {
      * @return: true if a winner was found
      */
     private fun displayAnyWin(): Boolean {
-        val winSquares: List<Int>? = getWinningSquares()
+        val winSquares: List<Int>? = GameService.getWinningSquares()
         if (winSquares != null) {
-            winner = grid[winSquares[0]]
-            displayWinner(winner.toString())
+            GameService.winner = GameService.grid[winSquares[0]]
+            displayWinner(GameService.winner.toString())
             displayVictory(winSquares)
             return true
         }
@@ -296,18 +237,9 @@ class MainActivity : AppCompatActivity() {
     private fun toastWinner() {
         Toast.makeText(
             this,
-            String.format(getString(R.string.winner_message), winner),
+            String.format(getString(R.string.winner_message), GameService.Companion.winner),
             Toast.LENGTH_SHORT
         ).show()
-    }
-
-    private fun getWinningSquares(): List<Int>? {
-        allPossibleWinCombinations.forEach{ possibleWin ->
-            if (grid[possibleWin[0]] != SquareState.E && grid[possibleWin[0]] == grid[possibleWin[1]] && grid[possibleWin[0]] == grid[possibleWin[2]]) {
-                return possibleWin  // Found a winner
-            }
-        }
-        return null
     }
 
     private fun displayVictory(winSquares: List<Int>) {
@@ -321,7 +253,7 @@ class MainActivity : AppCompatActivity() {
      */
     fun onClickPlaySquare(view: View) {
         // TODO - integrate properly with playSquare()
-        if (winner != SquareState.E) {
+        if (GameService.Companion.winner != GameService.Companion.SquareState.E) {
             return // No more moves after a win
         }
 
@@ -331,29 +263,33 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        if (grid[gridIndex] != SquareState.E) {
+        if (GameService.Companion.grid[gridIndex] != GameService.Companion.SquareState.E) {
             return  // Can only change Empty squares
         }
 
         // Update the square's state
-        grid[gridIndex] = currPlayer
+        GameService.Companion.grid[gridIndex] = GameService.currPlayer
 
         // Update the square's display
-        view.text = currPlayer.toString()
+        view.text = GameService.currPlayer.toString()
 
         val winnerFound = displayAnyWin()
         if (winnerFound) {
             toastWinner()
         } else {
             // Switch to next player
-            currPlayer = if (currPlayer == SquareState.X) { SquareState.O } else { SquareState.X }
-            displayCurrPlayer()
+            GameService.currPlayer = if (GameService.currPlayer == GameService.Companion.SquareState.X) {
+                GameService.Companion.SquareState.O
+            } else {
+                GameService.Companion.SquareState.X
+            }
+            displayCurrPlayer(GameService.currPlayer.toString())
         }
     }
 
-    private fun displayCurrPlayer() {
+    private fun displayCurrPlayer(player: String) {
         (textPlayerView as TextView).text =
-            String.format(getString(R.string.curr_player_message), currPlayer)
+            String.format(getString(R.string.curr_player_message), player)
     }
 
     private fun displayWinner(winner: String) {
@@ -367,7 +303,9 @@ class MainActivity : AppCompatActivity() {
         builder.setTitle(getString(R.string.new_game_title_message))
         builder.setMessage(getString(R.string.new_game_confirm_message))
         builder.setPositiveButton(getString(R.string.new_button_message)) { _, _ ->
-            resetGame()
+            GameService.resetGame()
+            resetGridDisplay()
+            displayCurrPlayer(GameService.currPlayer.toString())
         }
         builder.setNegativeButton(getString(R.string.go_back_message)) { _, _ -> }
         builder.show()
