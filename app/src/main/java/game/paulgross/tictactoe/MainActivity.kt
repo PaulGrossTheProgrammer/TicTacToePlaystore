@@ -67,7 +67,7 @@ class MainActivity : AppCompatActivity() {
         for (i in 0..8) {
             val currState = preferences.getString("Grid$i", "E").toString()
             gameThread?.setGrid(i, currState)
-//            GameService.grid[i] = GameService.Companion.SquareState.valueOf(currState)
+//            gameThread?.setGrid(i, "E")  // TEMPORARY...
         }
 //        debugGrid()
 
@@ -112,19 +112,14 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        if (gameThread == null) {
-            // FIXME: Pass in context so that Intent signalling works again...
-            val context = applicationContext
-            gameThread = GameService(applicationContext)
-            gameThread?.start()
-        }
-
-        val intent = Intent()
-        intent.action = packageName + "display.UPDATE"
-        sendBroadcast(intent)
-
+        // TODO: Move this to after the UI is setup.
         appPaused = false  // Perhaps to re-enable paused sockets???
         if (ENABLE_SOCKET_SERVER) {
+            if (gameThread == null) {
+                gameThread = GameService(applicationContext)
+                gameThread?.start()
+            }
+
             // TODO: Will this work to get messages from GameServer???
             val intentFilter = IntentFilter()
             intentFilter.addAction(packageName + "display.UPDATE")
@@ -164,7 +159,9 @@ class MainActivity : AppCompatActivity() {
 
         restoreAppState()
 
-        displayGrid()
+        // FIXME - get the actual grid state - maybe queue a client request update???
+
+//        displayGrid(gridStateString)
         displayCurrPlayer(gameThread?.currPlayer.toString())
 //        displayAnyWin()
     }
@@ -214,7 +211,18 @@ class MainActivity : AppCompatActivity() {
     /**
      * Updates the current grid state into the display squares.
      */
-    private fun displayGrid() {
+    private fun displayGrid(gridStateString: String?) {
+        for (i in 0..8) {
+            val state = GameService.SquareState.valueOf(gridStateString?.get(i).toString())
+            val view = displaySquareList[i]
+
+            if (state == GameService.SquareState.E) {
+                view?.text = ""
+            } else {
+                view?.text = state.toString()
+            }
+        }
+/*
         for (i in 0..8) {
             val state = gameThread?.grid?.get(i)
             val view = displaySquareList[i]
@@ -224,7 +232,7 @@ class MainActivity : AppCompatActivity() {
             } else {
                 view?.text = state.toString()
             }
-        }
+        }*/
     }
 
     private fun resetGridDisplay() {
@@ -289,6 +297,7 @@ class MainActivity : AppCompatActivity() {
         // Update the square's display
         view.text = gameThread?.currPlayer.toString()
 
+
 /*        val winnerFound = displayAnyWin()
         if (winnerFound) {
             toastWinner()
@@ -345,9 +354,17 @@ class MainActivity : AppCompatActivity() {
      */
     private val gameMessageReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            displayGrid()
+            // TODO: Extract grid state from Intent
+            val gridStateString = intent.getStringExtra("grid")
+            val playerString = intent.getStringExtra("player")
+            Log.d("DEBUG", "Received current grid State = [$gridStateString]")
+            displayGrid(gridStateString)
+            if (playerString != null) {
+                displayCurrPlayer(playerString)
+            }
 
             // TODO - accept other update requests besides displayGrid()
+            // Use putExtra() in the Service and getStringExtra() here to decide what to display
 
             /*val request = intent.getStringExtra("Request")
             Log.d("DEBUG_RECV", "Request =[$request]")

@@ -11,7 +11,7 @@ class GameService(applicationContext: Context) : Thread() {
 
     private val context: Context
     init {
-        // keep the context for Intent broadcasts
+        // Store the context pointer to access Intent broadcasts
         context = applicationContext
     }
 
@@ -47,10 +47,12 @@ class GameService(applicationContext: Context) : Thread() {
     private val working = AtomicBoolean(true)
 
     override fun run() {
+        // TODO - make sure we aren't running a thread already...
         SocketServer(gameRequestQ).start()
 
         while (working.get()) {
 
+            // TODO - clear at least a few client requests if there are many queued up.
             val request = gameRequestQ.poll()  // Non-blocking read for client requests.
             if (request != null) {
                 Log.d(TAG, "[$request]")
@@ -67,7 +69,12 @@ class GameService(applicationContext: Context) : Thread() {
                     // Tell the UI to update
                     val intent = Intent()
                     intent.action = context.packageName + "display.UPDATE"
+                    val gs = encodeGrid()
+                    Log.d(TAG, "About to send grid: [$gs]")
+                    intent.putExtra("grid", encodeGrid())
+                    intent.putExtra("player", currPlayer.toString())
                     context.sendBroadcast(intent)
+                    Log.d(TAG, "Intent was sent.")
 
                     // TODO - need the response queue to return state to client thread.
 
@@ -75,12 +82,20 @@ class GameService(applicationContext: Context) : Thread() {
             }
             Thread.sleep(100L)  // Pause for a while...
 
-            // If the game is a player, then this is where the AI is coded.
+            // If the game is also a player, then this is where the AI is coded.
         }
     }
 
     fun shutdown() {
         working.set(false)
+    }
+
+    private fun encodeGrid(): String {
+        var encoded = ""
+        for (i in 0..8) {
+            encoded += grid[i].toString()
+        }
+        return encoded
     }
 
     fun resetGame() {
@@ -94,26 +109,25 @@ class GameService(applicationContext: Context) : Thread() {
     fun setGrid(index: Int, stateString: String) {
         grid[index] = SquareState.valueOf(stateString)
     }
+
     private fun playSquare(gridIndex: Int) {
-        // TODO - return true/false for change made
+        // TODO - return true if a change made.
         // TODO - call this from local GUI and from client socket handler
 
         if (winner != SquareState.E) {
             return // No more moves after a win
         }
 
-        if (grid[gridIndex] != GameService.SquareState.E) {
+        if (grid[gridIndex] != SquareState.E) {
             return  // Can only change Empty squares
         }
 
         // TODO: Update the square's state - replace with GameServer objects.
         grid[gridIndex] = currPlayer
 
-//        displayGrid()
-
+        Log.d(TAG, "Checking for win...")
         val winSquares: List<Int>? = getWinningSquares()
-//        val winnerFound = displayAnyWin()
-        if (winSquares == null) {
+        if (winSquares != null) {
 //            toastWinner()
         } else {
             // Switch to next player
@@ -122,7 +136,8 @@ class GameService(applicationContext: Context) : Thread() {
             } else {
                 SquareState.X
             }
-//            displayCurrPlayer(GameService.currPlayer.toString())
+
+            Log.d(TAG, "Current Player = $currPlayer")
         }
     }
 
@@ -154,6 +169,4 @@ class GameService(applicationContext: Context) : Thread() {
     companion object {
         private val TAG = GameService::class.java.simpleName
     }
-
-
 }
