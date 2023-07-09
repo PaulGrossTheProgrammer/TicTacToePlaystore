@@ -26,27 +26,18 @@ class MainActivity : AppCompatActivity() {
     private var textPlayerView: TextView? = null
 
     /**
-     * Dump out the current grid state into the debug log.
-     */
-/*    private fun debugGrid() {
-        Log.d("DEBUG", "GRID:")
-        Log.d("DEBUG", "${grid[0]} ${grid[1]} ${grid[2]}")
-        Log.d("DEBUG", "${grid[3]} ${grid[4]} ${grid[5]}")
-        Log.d("DEBUG", "${grid[6]} ${grid[7]} ${grid[8]}")
-    }*/
-
-    /**
      * Saves the current App state.
      *
      * MUST BE called from overridden onPause() to avoid accidental state loss.
      */
     private fun saveAppState() {
+        // FIXME
         val preferences = getPreferences(MODE_PRIVATE)
         val editor = preferences.edit()
 
         // Save the grid state.
         for (i in 0..8) {
-            editor.putString("Grid$i", gameThread?.grid!![i]?.toString())
+            editor.putString("Grid$i", gameThread?.grid!![i].toString())
         }
 
         editor.putString("CurrPlayer", gameThread?.currPlayer.toString())
@@ -60,6 +51,7 @@ class MainActivity : AppCompatActivity() {
      * MUST BE called from onCreate().
      */
     private fun restoreAppState() {
+        // FIXME
         Log.d("DEBUG", "Restoring previous game state...")
         val preferences = getPreferences(MODE_PRIVATE)
 
@@ -73,7 +65,6 @@ class MainActivity : AppCompatActivity() {
 
         // If there is no current player to restore, default to "X"
         val savedPlayer = preferences.getString("CurrPlayer", "X").toString()
-        GameService.SquareState.valueOf(savedPlayer)
         gameThread?.currPlayer = GameService.SquareState.valueOf(savedPlayer)
     }
 
@@ -136,12 +127,11 @@ class MainActivity : AppCompatActivity() {
 
         textPlayerView = findViewById(R.id.textPlayer)
 
-        restoreAppState()
-        displayCurrPlayer(gameThread?.currPlayer.toString())
-//        displayAnyWin()
+        restoreAppState()  // FIXME - doesn't work anymore...
+        gameThread?.gameRequestQ?.add(GameService.ClientRequest("display:", null))
+//        displayCurrPlayer(gameThread?.currPlayer.toString())
 
-        // TODO: Move this to after the UI is setup.
-        appPaused = false  // Perhaps to re-enable paused sockets???
+        appPaused = false  // TODO - study what happens to clients when activity restarts...
         if (ENABLE_SOCKET_SERVER) {
             Log.d("DEBUG", "Starting the socket server.")
             if (gameThread == null) {
@@ -167,36 +157,6 @@ class MainActivity : AppCompatActivity() {
         stopService(Intent(applicationContext, GameService::class.java))
     }
 
-/*    private fun playSquare(gridIndex: Int) {
-        // TODO - return true/false for change made
-        // TODO - call this from local GUI and from client socket handler
-
-        if (GameService.winner != GameService.Companion.SquareState.E) {
-            return // No more moves after a win
-        }
-
-        if (GameService.grid[gridIndex] != GameService.Companion.SquareState.E) {
-            return  // Can only change Empty squares
-        }
-
-        // TODO: Update the square's state - replace with GameServer objects.
-        GameService.Companion.grid[gridIndex] = GameService.currPlayer
-
-        displayGrid()
-
-        val winnerFound = displayAnyWin()
-        if (winnerFound) {
-            toastWinner()
-        } else {
-            // Switch to next player
-            GameService.currPlayer = if (GameService.currPlayer == GameService.Companion.SquareState.X) {
-                GameService.Companion.SquareState.O
-            } else {
-                GameService.Companion.SquareState.X
-            }
-            displayCurrPlayer(GameService.currPlayer.toString())
-        }
-    }*/
 
     /*
         User Interface functions start here.
@@ -226,22 +186,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Looks for and displays any winner in the game.
-     * Includes a pop-up winning message.
-     *
-     * @return: true if a winner was found
-     */
-/*    private fun displayAnyWin(): Boolean {
-        val winSquares: List<Int>? = GameService.getWinningSquares()
-        if (winSquares != null) {
-            GameService.winner = GameService.grid[winSquares[0]]
-            displayWinner(GameService.winner.toString())
-            displayVictory(winSquares)
-            return true
-        }
-        return false
-    }*/
     private fun toastWinner(winner: String) {
         Toast.makeText(
             this,
@@ -264,40 +208,12 @@ class MainActivity : AppCompatActivity() {
      *  Handler for when the User clicks a square in the playing grid.
      */
     fun onClickPlaySquare(view: View) {
-        // TODO - integrate properly with playSquare()
-        if (gameThread?.winner != GameService.SquareState.E) {
-            return // No more moves after a win
-        }
-
         val gridIndex = displaySquareList.indexOf(view as TextView)
         if (gridIndex == -1) {
             Log.d("Debug", "The user did NOT click a grid square.")
             return
         }
-
-        if (gameThread?.grid?.get(gridIndex) != GameService.SquareState.E) {
-            return  // Can only change Empty squares
-        }
-
-        // Update the square's state
-        gameThread?.grid!![gridIndex] = gameThread?.currPlayer!!
-
-        // Update the square's display
-        view.text = gameThread?.currPlayer.toString()
-
-
-/*        val winnerFound = displayAnyWin()
-        if (winnerFound) {
-            toastWinner()
-        } else {
-            // Switch to next player
-            GameService.currPlayer = if (GameService.currPlayer == GameService.Companion.SquareState.X) {
-                GameService.Companion.SquareState.O
-            } else {
-                GameService.Companion.SquareState.X
-            }
-            displayCurrPlayer(GameService.currPlayer.toString())
-        }*/
+        gameThread?.gameRequestQ?.add(GameService.ClientRequest("s:$gridIndex", null))
     }
 
     private fun displayCurrPlayer(player: String) {

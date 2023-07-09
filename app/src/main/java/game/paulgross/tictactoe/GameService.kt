@@ -40,13 +40,13 @@ class GameService(applicationContext: Context) : Thread() {
     var winner = SquareState.E
 
     // Maybe the responseQ can be option, say when the local client doesn't need it???
-    data class ClientRequest(val requestString: String, val responseQ: Queue<String>)
+    data class ClientRequest(val requestString: String, val responseQ: Queue<String>?)
 
     // TODO
     // The Socket Server thread creates client handler threads, passing the que to them too.
     // When a client needs work done, the request queue is added to by the client handler
     // This Service listens to the request queue, and interacts with the Activity as required.
-    private val gameRequestQ: BlockingQueue<ClientRequest> = LinkedBlockingQueue()
+    val gameRequestQ: BlockingQueue<ClientRequest> = LinkedBlockingQueue()
 
     private val working = AtomicBoolean(true)
 
@@ -67,7 +67,7 @@ class GameService(applicationContext: Context) : Thread() {
                 Log.d(TAG, "[$request]")
 
                 if (requestString == "exit") {
-                    responseQ.add("exit")
+                    responseQ?.add("exit")
                 } else {
                     var update = false
                     if (requestString.startsWith("s:", true)!!) {
@@ -75,23 +75,19 @@ class GameService(applicationContext: Context) : Thread() {
                         val gridIndex = Integer.valueOf(indexString)
                         playSquare(gridIndex)
 
-                        responseQ.add("g:${encodeGrid()}")
+                        responseQ?.add("g:${encodeGrid()}")
+                        update = true
+                    }
+                    if (requestString == "status:") {
+                        responseQ?.add("g:${encodeGrid()}")
+                    }
+                    if (requestString == "display:") {
+                        // Forces the UI to display.
                         update = true
                     }
 
                     if (update) {
-                        // Tell the UI to update
                         messageUIUpdateGridDisplay()
-/*
-                        val intent = Intent()
-                        intent.action = context.packageName + "display.UPDATE"
-                        val gs = encodeGrid()
-                        Log.d(TAG, "About to send grid: [$gs]")
-                        intent.putExtra("grid", encodeGrid())
-                        intent.putExtra("player", currPlayer.toString())
-                        context.sendBroadcast(intent)
-                        Log.d(TAG, "Intent was sent.")
-*/
                     }
 
                     // TODO - need the response queue to return state to client thread.
@@ -126,6 +122,14 @@ class GameService(applicationContext: Context) : Thread() {
         intent.putExtra("winsquares", squares)
         context.sendBroadcast(intent)
     }
+
+    private fun messageUIDisplayWinner(winner: String) {
+        val intent = Intent()
+        intent.action = context.packageName + "display.UPDATE"
+        intent.putExtra("winner", winner)
+        context.sendBroadcast(intent)
+    }
+
     private fun encodeGrid(): String {
         var encoded = ""
         for (i in 0..8) {
@@ -147,9 +151,6 @@ class GameService(applicationContext: Context) : Thread() {
     }
 
     private fun playSquare(gridIndex: Int) {
-        // TODO - return true if a change made.
-        // TODO - call this from local GUI
-
         if (winner != SquareState.E) {
             return // No more moves after a win
         }
@@ -165,7 +166,7 @@ class GameService(applicationContext: Context) : Thread() {
         val winSquares: List<Int>? = getWinningSquares()
         if (winSquares != null) {
             messageUIDisplayVictory(winSquares)
-//            toastWinner() // TODO
+            messageUIDisplayWinner(winSquares[0].toString())
         } else {
             // Switch to next player
             currPlayer = if (currPlayer == SquareState.X) {
