@@ -250,10 +250,14 @@ class MainActivity : AppCompatActivity() {
         ).show()
     }
 
-    private fun displayVictory(winSquares: List<Int>) {
-        displaySquareList[winSquares[0]]?.setBackgroundColor(colorOfWinning!!)
-        displaySquareList[winSquares[1]]?.setBackgroundColor(colorOfWinning!!)
-        displaySquareList[winSquares[2]]?.setBackgroundColor(colorOfWinning!!)
+    private fun displayVictory(winSquares: String) {
+        val s1 = Integer.parseInt(winSquares[0].toString())
+        val s2 = Integer.parseInt(winSquares[1].toString())
+        val s3 = Integer.parseInt(winSquares[2].toString())
+
+        displaySquareList[s1]?.setBackgroundColor(colorOfWinning!!)
+        displaySquareList[s2]?.setBackgroundColor(colorOfWinning!!)
+        displaySquareList[s3]?.setBackgroundColor(colorOfWinning!!)
     }
 
     /**
@@ -338,28 +342,25 @@ class MainActivity : AppCompatActivity() {
      */
     private val gameMessageReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            // TODO: Extract grid state from Intent
             val gridStateString = intent.getStringExtra("grid")
             val playerString = intent.getStringExtra("player")
+            val winsquaresString = intent.getStringExtra("winsquares")
+            val winnerString = intent.getStringExtra("winner")
+
             Log.d("DEBUG", "Received current grid State = [$gridStateString]")
-            displayGrid(gridStateString)
+
+            if (gridStateString != null) {
+                displayGrid(gridStateString)
+            }
             if (playerString != null) {
                 displayCurrPlayer(playerString)
             }
-
-            // TODO - accept other update requests besides displayGrid()
-            // Use putExtra() in the Service and getStringExtra() here to decide what to display
-
-            /*val request = intent.getStringExtra("Request")
-            Log.d("DEBUG_RECV", "Request =[$request]")
-
-            // TODO - check that client player matches current player
-
-            if (request?.startsWith("PLAY", true)!!) {
-                val indexString = request.substring(4..4)
-                val gridIndex = Integer.valueOf(indexString)
-                playSquare(gridIndex)
-            }*/
+            if (winsquaresString != null) {
+                displayVictory(winsquaresString)
+            }
+            if (winnerString != null) {
+                toastWinner(winnerString)
+            }
         }
     }
 }
