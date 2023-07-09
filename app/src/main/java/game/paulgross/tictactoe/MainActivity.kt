@@ -66,8 +66,8 @@ class MainActivity : AppCompatActivity() {
         // Load the previous grid state. Default to Empty if nothing was saved before.
         for (i in 0..8) {
             val currState = preferences.getString("Grid$i", "E").toString()
-            gameThread?.setGrid(i, currState)
-//            gameThread?.setGrid(i, "E")  // TEMPORARY...
+            gameThread?.setGridSquare(i, currState)
+//            gameThread?.setGrid(i, "E")  // TEMPORARY to force a reset...
         }
 //        debugGrid()
 
@@ -112,27 +112,6 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // TODO: Move this to after the UI is setup.
-        appPaused = false  // Perhaps to re-enable paused sockets???
-        if (ENABLE_SOCKET_SERVER) {
-            if (gameThread == null) {
-                gameThread = GameService(applicationContext)
-                gameThread?.start()
-            }
-
-            // TODO: Will this work to get messages from GameServer???
-            val intentFilter = IntentFilter()
-            intentFilter.addAction(packageName + "display.UPDATE")
-            registerReceiver(gameMessageReceiver, intentFilter)
-
-            Log.d("DEBUG", "Starting the socket server.")
-
-//            startService(Intent(applicationContext, GameService::class.java))
-
-        } else {
-            Log.d("DEBUG", "Socket server DISABLED.")
-        }
-
         if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
             setContentView(R.layout.activity_main_landscape)
         } else {
@@ -158,12 +137,28 @@ class MainActivity : AppCompatActivity() {
         textPlayerView = findViewById(R.id.textPlayer)
 
         restoreAppState()
-
-        // FIXME - get the actual grid state - maybe queue a client request update???
-
-//        displayGrid(gridStateString)
         displayCurrPlayer(gameThread?.currPlayer.toString())
 //        displayAnyWin()
+
+        // TODO: Move this to after the UI is setup.
+        appPaused = false  // Perhaps to re-enable paused sockets???
+        if (ENABLE_SOCKET_SERVER) {
+            Log.d("DEBUG", "Starting the socket server.")
+            if (gameThread == null) {
+                gameThread = GameService(applicationContext)
+                gameThread?.start()
+            }
+
+            val intentFilter = IntentFilter()
+            intentFilter.addAction(packageName + "display.UPDATE")
+            registerReceiver(gameMessageReceiver, intentFilter)
+
+        } else {
+            Log.d("DEBUG", "Socket server DISABLED.")
+        }
+
+
+        // TODO - Send the grid state as a queued a client request update???
     }
 
     override fun onStop() {
@@ -222,17 +217,6 @@ class MainActivity : AppCompatActivity() {
                 view?.text = state.toString()
             }
         }
-/*
-        for (i in 0..8) {
-            val state = gameThread?.grid?.get(i)
-            val view = displaySquareList[i]
-
-            if (state == GameService.SquareState.E) {
-                view?.text = ""
-            } else {
-                view?.text = state.toString()
-            }
-        }*/
     }
 
     private fun resetGridDisplay() {

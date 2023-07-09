@@ -4,7 +4,9 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import java.util.Queue
+import java.util.concurrent.BlockingQueue
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.atomic.AtomicBoolean
 
 class GameService(applicationContext: Context) : Thread() {
@@ -38,11 +40,14 @@ class GameService(applicationContext: Context) : Thread() {
     var currPlayer: SquareState = SquareState.X
     var winner = SquareState.E
 
+    // Maybe the responseQ can be option, say when the local client doesn't need it???
+    data class ClientRequest(val requestString: String, val responseQ: Queue<String>)
+
     // TODO
     // The Socket Server thread creates client handler threads, passing the que to them too.
     // When a client needs work done, the request queue is added to by the client handler
     // This Service listens to the request queue, and interacts with the Activity as required.
-    private val gameRequestQ: Queue<String> = ConcurrentLinkedQueue()
+    private val gameRequestQ: BlockingQueue<ClientRequest> = LinkedBlockingQueue()
 
     private val working = AtomicBoolean(true)
 
@@ -55,26 +60,37 @@ class GameService(applicationContext: Context) : Thread() {
             // TODO - clear at least a few client requests if there are many queued up.
             val request = gameRequestQ.poll()  // Non-blocking read for client requests.
             if (request != null) {
+                val requestString = request.requestString
+                val responseQ = request.responseQ
+
+                Log.d(TAG, "Got a response Queue: $responseQ")
+
                 Log.d(TAG, "[$request]")
 
-                if (request == "exit") {
-                    // TODO - remove client response queue because the client has closed the connection.
+                if (requestString == "exit") {
+                    responseQ.add("exit")
                 } else {
-                    if (request?.startsWith("PLAY", true)!!) {
-                        val indexString = request.substring(4..4)
+                    var update = false
+                    if (requestString.startsWith("s:", true)!!) {
+                        val indexString = requestString[2].toString()
                         val gridIndex = Integer.valueOf(indexString)
                         playSquare(gridIndex)
+
+                        responseQ.add("g:${encodeGrid()}")
+                        update = true
                     }
 
-                    // Tell the UI to update
-                    val intent = Intent()
-                    intent.action = context.packageName + "display.UPDATE"
-                    val gs = encodeGrid()
-                    Log.d(TAG, "About to send grid: [$gs]")
-                    intent.putExtra("grid", encodeGrid())
-                    intent.putExtra("player", currPlayer.toString())
-                    context.sendBroadcast(intent)
-                    Log.d(TAG, "Intent was sent.")
+                    if (update) {
+                        // Tell the UI to update
+                        val intent = Intent()
+                        intent.action = context.packageName + "display.UPDATE"
+                        val gs = encodeGrid()
+                        Log.d(TAG, "About to send grid: [$gs]")
+                        intent.putExtra("grid", encodeGrid())
+                        intent.putExtra("player", currPlayer.toString())
+                        context.sendBroadcast(intent)
+                        Log.d(TAG, "Intent was sent.")
+                    }
 
                     // TODO - need the response queue to return state to client thread.
 
@@ -106,7 +122,7 @@ class GameService(applicationContext: Context) : Thread() {
         currPlayer = SquareState.X
     }
 
-    fun setGrid(index: Int, stateString: String) {
+    fun setGridSquare(index: Int, stateString: String) {
         grid[index] = SquareState.valueOf(stateString)
     }
 
@@ -153,7 +169,7 @@ class GameService(applicationContext: Context) : Thread() {
         listOf(0, 4, 8),
         listOf(2, 4, 6)
     )
-    fun getWinningSquares(): List<Int>? {
+    private fun getWinningSquares(): List<Int>? {
         allPossibleWinCombinations.forEach{ possibleWin ->
             if (grid[possibleWin[0]] != SquareState.E
                 &&

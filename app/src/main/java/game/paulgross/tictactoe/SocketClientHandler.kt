@@ -9,9 +9,16 @@ import java.io.IOException
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.util.Queue
+import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.BlockingQueue
+import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.LinkedBlockingQueue
 
 
-class SocketClientHandler(private val dataInputStream: DataInputStream, private val dataOutputStream: DataOutputStream, private val gameRequestQ: Queue<String>) : Thread() {
+class SocketClientHandler(private val dataInputStream: DataInputStream, private val dataOutputStream: DataOutputStream, private val gameRequestQ: BlockingQueue<GameService.ClientRequest>) : Thread() {
+
+    private val responseQ: BlockingQueue<String> = LinkedBlockingQueue()
+
     override fun run() {
         val input = BufferedReader(InputStreamReader(dataInputStream))
         val output = BufferedWriter(OutputStreamWriter(dataOutputStream))
@@ -27,16 +34,16 @@ class SocketClientHandler(private val dataInputStream: DataInputStream, private 
 
                 // FIXME - data is a null pointer when client  closes socket. Why?
                 if (data != null) {
-                    gameRequestQ.add(data)
-
-                    // TODO - wait here for the GameService to respond to the request.
-
-                    output.write("Hello Client. You said \"$data\"")
-                    output.flush()
-
-                    if (data == "bye") {
+                    if (data == "exit") {
                         running = false
                     }
+
+                    gameRequestQ.add(GameService.ClientRequest(data, responseQ))
+
+                    // Wait here for the GameService to respond to the request.
+                    val response = responseQ.take()
+                    output.write("Response = \"$response\"")
+                    output.flush()
                 } else {
                     running = false
                 }
