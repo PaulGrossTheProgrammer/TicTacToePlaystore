@@ -96,16 +96,20 @@ class GameServer(applicationContext: Context) : Thread() {
                     }
                 }
             }
-            Thread.sleep(250L)  // Pause for a short time...
+            Thread.sleep(100L)  // Pause for a short time...
 
             // If the game is also a player, then this is where the AI is coded.
         }
         Log.d(TAG, "The Game Server has shut down.")
     }
 
-    fun shutdown() {
-        Log.d(TAG, "The Game Server is shutting down ...")
-        working.set(false)
+    private fun pause() {
+        // TODO - pause while the MainActivity is suspended or being updated.
+    }
+
+    private fun shutdown() {
+//        Log.d(TAG, "The Game Server is shutting down ...")
+//        working.set(false)
     }
 
     private fun messageUIDisplayGrid() {

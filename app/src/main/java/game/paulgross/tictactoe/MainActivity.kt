@@ -12,10 +12,14 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import java.util.concurrent.BlockingQueue
 
 
 class MainActivity : AppCompatActivity() {
+    private lateinit var viewModel: MainActivityViewModel
+    private lateinit var viewModelFactory: MainActivityViewModelFactory
 
     private var gameThread: GameServer? = null
     // TODO - convert all game activities to queued requests.
@@ -100,6 +104,9 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        viewModelFactory = MainActivityViewModelFactory(0)
+        viewModel = ViewModelProvider(this, viewModelFactory).get(MainActivityViewModel::class.java)
+
         if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
             setContentView(R.layout.activity_main_landscape)
         } else {
@@ -135,23 +142,30 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
-        stopGameServer()
+        // TODO - ask the game server to pause until activity awakes again...
+//        stopGameServer()
     }
 
     private fun startGameServer() {
-        Log.d("DEBUG", "Starting the game server ...")
-        if (gameThread == null) {
+        gameThread = viewModel.getGameServer()
+
+        if (gameThread != null) {
+            Log.d(TAG, "Attached to the original game server.")
+        } else {
+            Log.d(TAG, "Starting the game server ...")
             gameThread = GameServer(applicationContext)
             gameThread?.start()
-            gameServerRequestQ = gameThread?.getRequestQueue()
+            viewModel.setGameServer(gameThread!!)
         }
+
+        gameServerRequestQ = gameThread?.getRequestQueue()
     }
 
     private fun stopGameServer() {
-        Log.d("DEBUG", "Stopping the game server ...")
-        gameThread?.shutdown()
-        gameThread = null
-        gameServerRequestQ = null
+        Log.d(TAG, "Stopping the game server ...")
+//        gameThread?.shutdown()
+//        gameThread = null
+//        gameServerRequestQ = null
     }
 
     /*
