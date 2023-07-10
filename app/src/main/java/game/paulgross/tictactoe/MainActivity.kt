@@ -285,6 +285,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     companion object {
-        private val TAG = GameServer::class.java.simpleName
+        private val TAG = MainActivity::class.java.simpleName
     }
 }
