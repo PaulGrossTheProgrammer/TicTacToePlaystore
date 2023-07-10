@@ -257,18 +257,21 @@ class MainActivity : AppCompatActivity() {
             val winsquaresString = intent.getStringExtra("winsquares")
             val winnerString = intent.getStringExtra("winner")
 
-            Log.d(TAG, "Received current grid State = [$gridStateString]")
 
             if (gridStateString != null) {
+                Log.d(TAG, "Received current grid State = [$gridStateString]")
                 displayGrid(gridStateString)
             }
             if (playerString != null) {
+                Log.d(TAG, "Received current playerString = [$playerString]")
                 displayCurrPlayer(playerString)
             }
             if (winsquaresString != null) {
+                Log.d(TAG, "Received current winsquaresString = [$winsquaresString]")
                 displayVictory(winsquaresString)
             }
             if (winnerString != null) {
+                Log.d(TAG, "Received current winnerString = [$winnerString]")
                 toastWinner(winnerString)
             }
         }
