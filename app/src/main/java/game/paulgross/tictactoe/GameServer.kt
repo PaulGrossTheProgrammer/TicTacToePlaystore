@@ -10,6 +10,12 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 class GameServer(applicationContext: Context) : Thread() {
 
+    // TODO
+    // The Socket Server thread creates client handler threads, passing the que to them too.
+    // When a client needs work done, the request queue is added to by the client handler
+    // This Service listens to the request queue, and interacts with the Activity as required.
+    val gameRequestQ: BlockingQueue<ClientRequest> = LinkedBlockingQueue()
+
     private val context: Context
     init {
         // Store the context pointer to allow access to Intent message broadcast system.
@@ -41,12 +47,6 @@ class GameServer(applicationContext: Context) : Thread() {
 
     data class ClientRequest(val requestString: String, val responseQ: Queue<String>?)
 
-    // TODO
-    // The Socket Server thread creates client handler threads, passing the que to them too.
-    // When a client needs work done, the request queue is added to by the client handler
-    // This Service listens to the request queue, and interacts with the Activity as required.
-    val gameRequestQ: BlockingQueue<ClientRequest> = LinkedBlockingQueue()
-
     private val working = AtomicBoolean(true)
 
     override fun run() {
@@ -67,7 +67,9 @@ class GameServer(applicationContext: Context) : Thread() {
                     responseQ?.add("exit")
                     // TODO - allow other players to take over client's role ...
                 } else {
+                    var validRequest = false
                     if (requestString.startsWith("s:", true)!!) {
+                        validRequest = true
                         val indexString = requestString[2].toString()
                         val gridIndex = Integer.valueOf(indexString)
                         playSquare(gridIndex)
@@ -76,11 +78,18 @@ class GameServer(applicationContext: Context) : Thread() {
                         messageUIDisplayGrid()
                     }
                     if (requestString == "status:") {
+                        validRequest = true
                         responseQ?.add("g:${encodeGrid()}")
                     }
                     if (requestString == "display:") {
+                        validRequest = true
                         // Forces the UI to display.
                         messageUIDisplayGrid()
+                        updateWinDisplay()
+                    }
+
+                    if (!validRequest) {
+                        responseQ?.add("invalid:$requestString")
                     }
                 }
             }
@@ -143,10 +152,6 @@ class GameServer(applicationContext: Context) : Thread() {
         currPlayer = SquareState.X
     }
 
-    fun setGridSquare(index: Int, stateString: String) {
-        grid[index] = SquareState.valueOf(stateString)
-    }
-
     private fun playSquare(gridIndex: Int) {
         if (winner != SquareState.E) {
             return // No more moves after a win
@@ -156,15 +161,10 @@ class GameServer(applicationContext: Context) : Thread() {
             return  // Can only change Empty squares
         }
 
-        // TODO: Update the square's state - replace with GameServer objects.
         grid[gridIndex] = currPlayer
 
-        Log.d(TAG, "Checking for win...")
-        val winSquares: List<Int>? = getWinningSquares()
-        if (winSquares != null) {
-            messageUIDisplayVictory(winSquares)
-            messageUIDisplayWinner(winSquares[0].toString())
-        } else {
+        val hasWinner = updateWinDisplay()
+        if (!hasWinner) {
             // Switch to next player
             currPlayer = if (currPlayer == SquareState.X) {
                 SquareState.O
@@ -173,6 +173,19 @@ class GameServer(applicationContext: Context) : Thread() {
             }
 
             Log.d(TAG, "Current Player = $currPlayer")
+        }
+    }
+
+    private fun updateWinDisplay(): Boolean {
+        Log.d(TAG, "Checking for win...")
+        val winSquares: List<Int>? = getWinningSquares()
+        if (winSquares != null) {
+            winner = grid[winSquares[0]]
+            messageUIDisplayVictory(winSquares)
+            messageUIDisplayWinner(winner.toString())
+            return true
+        } else {
+            return false
         }
     }
 

@@ -12,11 +12,14 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import java.util.concurrent.BlockingQueue
 
 
 class MainActivity : AppCompatActivity() {
 
     private var gameThread: GameServer? = null
+    // TODO - convert all game activities to queued requests.
+    private var gameServerRequestQ: BlockingQueue<GameServer.ClientRequest>? = null
 
     private var displaySquareList: MutableList<TextView?> = mutableListOf()
 
@@ -51,7 +54,7 @@ class MainActivity : AppCompatActivity() {
      */
     private fun restoreAppState() {
         // FIXME - doesn't work correctly on first run....?
-        Log.d("DEBUG", "Restoring previous game state...")
+        Log.d(TAG, "Restoring previous game state...")
         val preferences = getPreferences(MODE_PRIVATE)
 
         // Load the previous grid state. Default to Empty if nothing was saved before.
@@ -60,12 +63,13 @@ class MainActivity : AppCompatActivity() {
             val currState = preferences.getString("Grid$i", "E").toString()
             savedGrid += currState
         }
-        Log.d("DEBUG", "Restoring saved grid: $savedGrid")
+        Log.d(TAG, "Restoring saved grid: $savedGrid")
+        // TODO - create a special setStatus request only  valid from here ...
         gameThread?.decodeGrid(savedGrid)
 
         // If there is no current player to restore, default to "X"
         val savedPlayer = preferences.getString("CurrPlayer", "X").toString()
-        // FIXME - call a gamethread message instead
+        // TODO - create a special setStatus request only  valid from here ...
         gameThread?.currPlayer = GameServer.SquareState.valueOf(savedPlayer)
     }
 
@@ -121,24 +125,35 @@ class MainActivity : AppCompatActivity() {
 
         textPlayerView = findViewById(R.id.textPlayer)
 
-        Log.d("DEBUG", "Starting the game server.")
-        if (gameThread == null) {
-            gameThread = GameServer(applicationContext)
-            gameThread?.start()
-        }
-
+        startGameServer()
         enableMessagesFromGameServer()
+
+        restoreAppState()
 
         // Queue a GameService request to update the UI.
         gameThread?.gameRequestQ?.add(GameServer.ClientRequest("display:", null))
 
-        restoreAppState()
     }
 
     override fun onStop() {
         super.onStop()
+        stopGameServer()
+    }
+
+    private fun startGameServer() {
+        Log.d("DEBUG", "Starting the game server ...")
+        if (gameThread == null) {
+            gameThread = GameServer(applicationContext)
+            gameThread?.start()
+            gameServerRequestQ = gameThread?.gameRequestQ
+        }
+    }
+
+    private fun stopGameServer() {
+        Log.d("DEBUG", "Stopping the game server ...")
         gameThread?.shutdown()
         gameThread = null
+        gameServerRequestQ = null
     }
 
     /*
@@ -192,7 +207,7 @@ class MainActivity : AppCompatActivity() {
     fun onClickPlaySquare(view: View) {
         val gridIndex = displaySquareList.indexOf(view as TextView)
         if (gridIndex == -1) {
-            Log.d("Debug", "The user did NOT click a grid square.")
+            Log.d(TAG, "The user did NOT click a grid square.")
             return
         }
         gameThread?.gameRequestQ?.add(GameServer.ClientRequest("s:$gridIndex", null))
@@ -203,10 +218,6 @@ class MainActivity : AppCompatActivity() {
             String.format(getString(R.string.curr_player_message), player)
     }
 
-    private fun displayWinner(winner: String) {
-        (textPlayerView as TextView).text = String.format(getString(R.string.winner_message), winner)
-    }
-
     fun onClickNewGame(view: View) {
         // Ask user to confirm new game
         // FIXME: The buttons on the AlertDialog have different colours to the layout.
@@ -214,6 +225,7 @@ class MainActivity : AppCompatActivity() {
         builder.setTitle(getString(R.string.new_game_title_message))
         builder.setMessage(getString(R.string.new_game_confirm_message))
         builder.setPositiveButton(getString(R.string.new_button_message)) { _, _ ->
+            // TODO - convert to a queued request.
             gameThread?.resetGame()
             resetGridDisplay()
             displayCurrPlayer(gameThread?.currPlayer.toString())
@@ -245,7 +257,7 @@ class MainActivity : AppCompatActivity() {
             val winsquaresString = intent.getStringExtra("winsquares")
             val winnerString = intent.getStringExtra("winner")
 
-            Log.d("DEBUG", "Received current grid State = [$gridStateString]")
+            Log.d(TAG, "Received current grid State = [$gridStateString]")
 
             if (gridStateString != null) {
                 displayGrid(gridStateString)
@@ -270,5 +282,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun disableMessagesFromGameServer() {
         unregisterReceiver(gameMessageReceiver)
+    }
+
+    companion object {
+        private val TAG = GameServer::class.java.simpleName
     }
 }
