@@ -18,8 +18,9 @@ import java.util.concurrent.BlockingQueue
 
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var viewModel: MainActivityViewModel
-    private lateinit var viewModelFactory: MainActivityViewModelFactory
+    // The ViewModel to ensure that we keep a link to the GameServer after screen rotation.
+    private lateinit var viewModel: ActivityViewModel
+    private lateinit var viewModelFactory: ActivityViewModelFactory
 
     private var gameThread: GameServer? = null
     // TODO - convert all game activities to queued requests.
@@ -104,8 +105,8 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        viewModelFactory = MainActivityViewModelFactory(0)
-        viewModel = ViewModelProvider(this, viewModelFactory).get(MainActivityViewModel::class.java)
+        viewModelFactory = ActivityViewModelFactory(0)
+        viewModel = ViewModelProvider(this, viewModelFactory).get(ActivityViewModel::class.java)
 
         if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
             setContentView(R.layout.activity_main_landscape)
@@ -150,9 +151,9 @@ class MainActivity : AppCompatActivity() {
         gameThread = viewModel.getGameServer()
 
         if (gameThread != null) {
-            Log.d(TAG, "Attached to the original game server.")
+            Log.d(TAG, "Reattached to the original GameServer.")
         } else {
-            Log.d(TAG, "Starting the game server ...")
+            Log.d(TAG, "Starting the GameServer ...")
             gameThread = GameServer(applicationContext)
             gameThread?.start()
             viewModel.setGameServer(gameThread!!)
@@ -302,5 +303,27 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private val TAG = MainActivity::class.java.simpleName
+    }
+
+    class ActivityViewModel(ignoreThis : Int): ViewModel() {
+
+        private var gameServer: GameServer? = null
+        fun getGameServer(): GameServer? {
+            return gameServer
+        }
+
+        fun setGameServer(theServer: GameServer) {
+            gameServer = theServer
+        }
+    }
+
+    class ActivityViewModelFactory(private val startingCount : Int): ViewModelProvider.Factory {
+
+        override  fun <T : ViewModel> create(modelClass: Class<T>): T {
+            if (modelClass.isAssignableFrom(ActivityViewModel::class.java)){
+                return ActivityViewModel(0) as T
+            }
+            throw IllegalArgumentException("Unknown View Model Class")
+        }
     }
 }
