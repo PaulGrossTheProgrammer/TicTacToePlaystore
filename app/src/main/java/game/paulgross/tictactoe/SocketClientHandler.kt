@@ -12,7 +12,7 @@ import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 
 
-class SocketClientHandler(private val dataInputStream: DataInputStream, private val dataOutputStream: DataOutputStream, private val gameRequestQ: BlockingQueue<GameService.ClientRequest>) : Thread() {
+class SocketClientHandler(private val dataInputStream: DataInputStream, private val dataOutputStream: DataOutputStream, private val gameRequestQ: BlockingQueue<GameServer.ClientRequest>) : Thread() {
 
     private val responseQ: BlockingQueue<String> = LinkedBlockingQueue()
 
@@ -35,7 +35,7 @@ class SocketClientHandler(private val dataInputStream: DataInputStream, private 
                         running = false
                     }
 
-                    gameRequestQ.add(GameService.ClientRequest(data, responseQ))
+                    gameRequestQ.add(GameServer.ClientRequest(data, responseQ))
 
                     // Wait here for the GameService to respond to the request.
                     val response = responseQ.take()

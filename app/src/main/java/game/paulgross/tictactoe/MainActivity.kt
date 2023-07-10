@@ -16,7 +16,7 @@ import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity() {
 
-    private val ENABLE_SOCKET_SERVER = true
+    private var gameThread: GameServer? = null
 
     private var displaySquareList: MutableList<TextView?> = mutableListOf()
 
@@ -31,7 +31,6 @@ class MainActivity : AppCompatActivity() {
      * MUST BE called from overridden onPause() to avoid accidental state loss.
      */
     private fun saveAppState() {
-        // FIXME
         val preferences = getPreferences(MODE_PRIVATE)
         val editor = preferences.edit()
 
@@ -51,30 +50,29 @@ class MainActivity : AppCompatActivity() {
      * MUST BE called from onCreate().
      */
     private fun restoreAppState() {
-        // FIXME
+        // FIXME - doesn't work correctly on first run....?
         Log.d("DEBUG", "Restoring previous game state...")
         val preferences = getPreferences(MODE_PRIVATE)
 
         // Load the previous grid state. Default to Empty if nothing was saved before.
+        var savedGrid: String = ""
         for (i in 0..8) {
             val currState = preferences.getString("Grid$i", "E").toString()
-            gameThread?.setGridSquare(i, currState)
-//            gameThread?.setGrid(i, "E")  // TEMPORARY to force a reset...
+            savedGrid += currState
         }
-//        debugGrid()
+        Log.d("DEBUG", "Restoring saved grid: $savedGrid")
+        gameThread?.decodeGrid(savedGrid)
 
         // If there is no current player to restore, default to "X"
         val savedPlayer = preferences.getString("CurrPlayer", "X").toString()
-        gameThread?.currPlayer = GameService.SquareState.valueOf(savedPlayer)
+        // FIXME - call a gamethread message instead
+        gameThread?.currPlayer = GameServer.SquareState.valueOf(savedPlayer)
     }
 
-    private var appPaused = false
-
     override fun onPause() {
-        unregisterReceiver(gameMessageReceiver)
+        disableMessagesFromGameServer()
         super.onPause()
 
-        appPaused = true
         // TODO: Because screen rotation calls onPause()...
         //  ... decide how best to handle open sockets.
         //  Should sockets be closed later in the lifecycle?
@@ -91,14 +89,10 @@ class MainActivity : AppCompatActivity() {
         //  After leaving PAUSED state, server resumes queue processing.
         //  NOTE that the client queue is timestamped, and old client actions are removed.
         //  So if the onPause is quickly resumed, the client will likely never notice.
-        if (ENABLE_SOCKET_SERVER) {
-            Log.d("DEBUG", "TODO: Pause or destroy the socket server.")
-        }
 
         saveAppState()
     }
 
-    private var gameThread: GameService? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -127,51 +121,39 @@ class MainActivity : AppCompatActivity() {
 
         textPlayerView = findViewById(R.id.textPlayer)
 
-        restoreAppState()  // FIXME - doesn't work anymore...
-        gameThread?.gameRequestQ?.add(GameService.ClientRequest("display:", null))
-//        displayCurrPlayer(gameThread?.currPlayer.toString())
-
-        appPaused = false  // TODO - study what happens to clients when activity restarts...
-        if (ENABLE_SOCKET_SERVER) {
-            Log.d("DEBUG", "Starting the socket server.")
-            if (gameThread == null) {
-                gameThread = GameService(applicationContext)
-                gameThread?.start()
-            }
-
-            val intentFilter = IntentFilter()
-            intentFilter.addAction(packageName + "display.UPDATE")
-            registerReceiver(gameMessageReceiver, intentFilter)
-
-        } else {
-            Log.d("DEBUG", "Socket server DISABLED.")
+        Log.d("DEBUG", "Starting the game server.")
+        if (gameThread == null) {
+            gameThread = GameServer(applicationContext)
+            gameThread?.start()
         }
 
+        enableMessagesFromGameServer()
 
-        // TODO - Send the grid state as a queued a client request update???
+        // Queue a GameService request to update the UI.
+        gameThread?.gameRequestQ?.add(GameServer.ClientRequest("display:", null))
+
+        restoreAppState()
     }
 
     override fun onStop() {
         super.onStop()
-
-        stopService(Intent(applicationContext, GameService::class.java))
+        gameThread?.shutdown()
+        gameThread = null
     }
-
 
     /*
         User Interface functions start here.
      */
-
 
     /**
      * Updates the current grid state into the display squares.
      */
     private fun displayGrid(gridStateString: String?) {
         for (i in 0..8) {
-            val state = GameService.SquareState.valueOf(gridStateString?.get(i).toString())
+            val state = GameServer.SquareState.valueOf(gridStateString?.get(i).toString())
             val view = displaySquareList[i]
 
-            if (state == GameService.SquareState.E) {
+            if (state == GameServer.SquareState.E) {
                 view?.text = ""
             } else {
                 view?.text = state.toString()
@@ -213,7 +195,7 @@ class MainActivity : AppCompatActivity() {
             Log.d("Debug", "The user did NOT click a grid square.")
             return
         }
-        gameThread?.gameRequestQ?.add(GameService.ClientRequest("s:$gridIndex", null))
+        gameThread?.gameRequestQ?.add(GameServer.ClientRequest("s:$gridIndex", null))
     }
 
     private fun displayCurrPlayer(player: String) {
@@ -254,7 +236,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-        Receive messages from socket client handler.
+        Receive messages from the GameServer.
      */
     private val gameMessageReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -278,5 +260,15 @@ class MainActivity : AppCompatActivity() {
                 toastWinner(winnerString)
             }
         }
+    }
+
+    private fun enableMessagesFromGameServer() {
+        val intentFilter = IntentFilter()
+        intentFilter.addAction(packageName + "display.UPDATE")
+        registerReceiver(gameMessageReceiver, intentFilter)
+    }
+
+    private fun disableMessagesFromGameServer() {
+        unregisterReceiver(gameMessageReceiver)
     }
 }

@@ -8,11 +8,11 @@ import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.atomic.AtomicBoolean
 
-class GameService(applicationContext: Context) : Thread() {
+class GameServer(applicationContext: Context) : Thread() {
 
     private val context: Context
     init {
-        // Store the context pointer to access Intent broadcasts
+        // Store the context pointer to allow access to Intent message broadcast system.
         context = applicationContext
     }
 
@@ -39,7 +39,6 @@ class GameService(applicationContext: Context) : Thread() {
     var currPlayer: SquareState = SquareState.X
     var winner = SquareState.E
 
-    // Maybe the responseQ can be option, say when the local client doesn't need it???
     data class ClientRequest(val requestString: String, val responseQ: Queue<String>?)
 
     // TODO
@@ -62,49 +61,42 @@ class GameService(applicationContext: Context) : Thread() {
                 val requestString = request.requestString
                 val responseQ = request.responseQ
 
-                Log.d(TAG, "Got a response Queue: $responseQ")
-
-                Log.d(TAG, "[$request]")
+                Log.d(TAG, "[$requestString]")
 
                 if (requestString == "exit") {
                     responseQ?.add("exit")
+                    // TODO - allow other players to take over client's role ...
                 } else {
-                    var update = false
                     if (requestString.startsWith("s:", true)!!) {
                         val indexString = requestString[2].toString()
                         val gridIndex = Integer.valueOf(indexString)
                         playSquare(gridIndex)
 
                         responseQ?.add("g:${encodeGrid()}")
-                        update = true
+                        messageUIDisplayGrid()
                     }
                     if (requestString == "status:") {
                         responseQ?.add("g:${encodeGrid()}")
                     }
                     if (requestString == "display:") {
                         // Forces the UI to display.
-                        update = true
+                        messageUIDisplayGrid()
                     }
-
-                    if (update) {
-                        messageUIUpdateGridDisplay()
-                    }
-
-                    // TODO - need the response queue to return state to client thread.
-
                 }
             }
-            Thread.sleep(100L)  // Pause for a while...
+            Thread.sleep(100L)  // Pause for a short time...
 
             // If the game is also a player, then this is where the AI is coded.
         }
+        Log.d(TAG, "The Game Server has shut down.")
     }
 
     fun shutdown() {
+        Log.d(TAG, "The Game Server is shutting down ...")
         working.set(false)
     }
 
-    private fun messageUIUpdateGridDisplay() {
+    private fun messageUIDisplayGrid() {
         val intent = Intent()
         intent.action = context.packageName + "display.UPDATE"
         val gs = encodeGrid()
@@ -118,7 +110,6 @@ class GameService(applicationContext: Context) : Thread() {
         val intent = Intent()
         intent.action = context.packageName + "display.UPDATE"
         val squares = winSquares[0].toString() + winSquares[1].toString() + winSquares[2].toString()
-        Log.d(TAG, "Encoded victory for Intent: $squares")
         intent.putExtra("winsquares", squares)
         context.sendBroadcast(intent)
     }
@@ -136,6 +127,12 @@ class GameService(applicationContext: Context) : Thread() {
             encoded += grid[i].toString()
         }
         return encoded
+    }
+
+    fun decodeGrid(gridString: String) {
+        for (i in 0..8) {
+            grid[i] = SquareState.valueOf(gridString[i].toString())
+        }
     }
 
     fun resetGame() {
@@ -205,6 +202,6 @@ class GameService(applicationContext: Context) : Thread() {
     }
 
     companion object {
-        private val TAG = GameService::class.java.simpleName
+        private val TAG = GameServer::class.java.simpleName
     }
 }

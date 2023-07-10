@@ -9,7 +9,7 @@ import java.net.Socket
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.atomic.AtomicBoolean
 
-class SocketServer(private val gameRequestQ: BlockingQueue<GameService.ClientRequest>): Thread() {
+class SocketServer(private val gameRequestQ: BlockingQueue<GameServer.ClientRequest>): Thread() {
 
     private var serverSocket: ServerSocket? = null
     private val working = AtomicBoolean(true)
