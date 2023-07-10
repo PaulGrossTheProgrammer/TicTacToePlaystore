@@ -14,7 +14,10 @@ class GameServer(applicationContext: Context) : Thread() {
     // The Socket Server thread creates client handler threads, passing the que to them too.
     // When a client needs work done, the request queue is added to by the client handler
     // This Service listens to the request queue, and interacts with the Activity as required.
-    val gameRequestQ: BlockingQueue<ClientRequest> = LinkedBlockingQueue()
+    private val gameRequestQ: BlockingQueue<ClientRequest> = LinkedBlockingQueue()
+    fun getRequestQueue(): BlockingQueue<ClientRequest> {
+        return gameRequestQ
+    }
 
     private val context: Context
     init {
@@ -93,7 +96,7 @@ class GameServer(applicationContext: Context) : Thread() {
                     }
                 }
             }
-            Thread.sleep(100L)  // Pause for a short time...
+            Thread.sleep(250L)  // Pause for a short time...
 
             // If the game is also a player, then this is where the AI is coded.
         }

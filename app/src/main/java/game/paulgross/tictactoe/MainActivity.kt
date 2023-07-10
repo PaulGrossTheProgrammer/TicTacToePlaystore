@@ -53,7 +53,6 @@ class MainActivity : AppCompatActivity() {
      * MUST BE called from onCreate().
      */
     private fun restoreAppState() {
-        // FIXME - doesn't work correctly on first run....?
         Log.d(TAG, "Restoring previous game state...")
         val preferences = getPreferences(MODE_PRIVATE)
 
@@ -131,8 +130,7 @@ class MainActivity : AppCompatActivity() {
         restoreAppState()
 
         // Queue a GameService request to update the UI.
-        gameThread?.gameRequestQ?.add(GameServer.ClientRequest("display:", null))
-
+        gameServerRequestQ?.add(GameServer.ClientRequest("display:", null))
     }
 
     override fun onStop() {
@@ -145,7 +143,7 @@ class MainActivity : AppCompatActivity() {
         if (gameThread == null) {
             gameThread = GameServer(applicationContext)
             gameThread?.start()
-            gameServerRequestQ = gameThread?.gameRequestQ
+            gameServerRequestQ = gameThread?.getRequestQueue()
         }
     }
 
@@ -210,7 +208,8 @@ class MainActivity : AppCompatActivity() {
             Log.d(TAG, "The user did NOT click a grid square.")
             return
         }
-        gameThread?.gameRequestQ?.add(GameServer.ClientRequest("s:$gridIndex", null))
+        gameServerRequestQ?.add(GameServer.ClientRequest("s:$gridIndex", null))
+        saveAppState()
     }
 
     private fun displayCurrPlayer(player: String) {
