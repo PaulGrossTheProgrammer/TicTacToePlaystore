@@ -105,7 +105,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        viewModelFactory = ActivityViewModelFactory(0)
+        viewModelFactory = ActivityViewModelFactory()
         viewModel = ViewModelProvider(this, viewModelFactory).get(ActivityViewModel::class.java)
 
         if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
@@ -255,6 +255,7 @@ class MainActivity : AppCompatActivity() {
         builder.setTitle(getString(R.string.exit_title_message))
         builder.setMessage(getString(R.string.exit_confirm_message))
         builder.setPositiveButton(getString(R.string.exit_message)) { _, _ ->
+            // TODO - clean up GameServer and close connections.
             finishAndRemoveTask()
         }
         builder.setNegativeButton(getString(R.string.go_back_message)) { _, _ -> }
@@ -305,7 +306,7 @@ class MainActivity : AppCompatActivity() {
         private val TAG = MainActivity::class.java.simpleName
     }
 
-    class ActivityViewModel(ignoreThis : Int): ViewModel() {
+    class ActivityViewModel(): ViewModel() {
 
         private var gameServer: GameServer? = null
         fun getGameServer(): GameServer? {
@@ -317,11 +318,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    class ActivityViewModelFactory(private val startingCount : Int): ViewModelProvider.Factory {
+    class ActivityViewModelFactory(): ViewModelProvider.Factory {
 
         override  fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(ActivityViewModel::class.java)){
-                return ActivityViewModel(0) as T
+                return ActivityViewModel() as T
             }
             throw IllegalArgumentException("Unknown View Model Class")
         }
