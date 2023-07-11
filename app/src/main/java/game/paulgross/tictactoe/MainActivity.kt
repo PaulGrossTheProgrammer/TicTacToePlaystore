@@ -18,13 +18,11 @@ import java.util.concurrent.BlockingQueue
 
 
 class MainActivity : AppCompatActivity() {
-    // The ViewModel to ensure that we keep a link to the GameServer after screen rotation.
+    // The ViewModel and its Factory ensures that we recover a link to the GameServer after screen rotation.
     private lateinit var viewModel: ActivityViewModel
     private lateinit var viewModelFactory: ActivityViewModelFactory
 
     private var gameThread: GameServer? = null
-    // TODO - convert all game activities to queued requests.
-    private var gameServerRequestQ: BlockingQueue<GameServer.ClientRequest>? = null
 
     private var displaySquareList: MutableList<TextView?> = mutableListOf()
 
@@ -32,50 +30,6 @@ class MainActivity : AppCompatActivity() {
     private var colorOfWinning: Int? = null
 
     private var textPlayerView: TextView? = null
-
-    /**
-     * Saves the current App state.
-     *
-     * MUST BE called from overridden onPause() to avoid accidental state loss.
-     */
-    private fun saveAppState() {
-        val preferences = getPreferences(MODE_PRIVATE)
-        val editor = preferences.edit()
-
-        // Save the grid state.
-        for (i in 0..8) {
-            editor.putString("Grid$i", gameThread?.grid!![i].toString())
-        }
-
-        editor.putString("CurrPlayer", gameThread?.currPlayer.toString())
-
-        editor.apply()
-    }
-
-    /**
-     * Restores the App state from the last time it was running.
-     *
-     * MUST BE called from onCreate().
-     */
-    private fun restoreAppState() {
-        Log.d(TAG, "Restoring previous game state...")
-        val preferences = getPreferences(MODE_PRIVATE)
-
-        // Load the previous grid state. Default to Empty if nothing was saved before.
-        var savedGrid: String = ""
-        for (i in 0..8) {
-            val currState = preferences.getString("Grid$i", "E").toString()
-            savedGrid += currState
-        }
-        Log.d(TAG, "Restoring saved grid: $savedGrid")
-        // TODO - create a special setStatus request only  valid from here ...
-        gameThread?.decodeGrid(savedGrid)
-
-        // If there is no current player to restore, default to "X"
-        val savedPlayer = preferences.getString("CurrPlayer", "X").toString()
-        // TODO - create a special setStatus request only  valid from here ...
-        gameThread?.currPlayer = GameServer.SquareState.valueOf(savedPlayer)
-    }
 
     override fun onPause() {
         disableMessagesFromGameServer()
@@ -97,8 +51,6 @@ class MainActivity : AppCompatActivity() {
         //  After leaving PAUSED state, server resumes queue processing.
         //  NOTE that the client queue is timestamped, and old client actions are removed.
         //  So if the onPause is quickly resumed, the client will likely never notice.
-
-        saveAppState()
     }
 
 
@@ -132,14 +84,8 @@ class MainActivity : AppCompatActivity() {
 
         textPlayerView = findViewById(R.id.textPlayer)
 
-        startGameServer()
         enableMessagesFromGameServer()
-
-        restoreAppState()  // TODO - can this be moved into the game server???
-
-        // Queue a GameService request to update the UI.
-        // TODO - can this be moved into the game server???
-        gameServerRequestQ?.add(GameServer.ClientRequest("display:", null))
+        startGameServer()
     }
 
     override fun onStop() {
@@ -154,12 +100,12 @@ class MainActivity : AppCompatActivity() {
             Log.d(TAG, "Reattached to the original GameServer.")
         } else {
             Log.d(TAG, "Starting the GameServer ...")
-            gameThread = GameServer(applicationContext)
+            gameThread = GameServer(applicationContext, getPreferences(MODE_PRIVATE))
             gameThread?.start()
             viewModel.setGameServer(gameThread!!)
         }
 
-        gameServerRequestQ = gameThread?.getRequestQueue()
+//        gameServerRequestQ = gameThread?.getRequestQueue()
     }
 
     private fun stopGameServer() {
@@ -221,8 +167,7 @@ class MainActivity : AppCompatActivity() {
             Log.d(TAG, "The user did NOT click a grid square.")
             return
         }
-        gameServerRequestQ?.add(GameServer.ClientRequest("s:$gridIndex", null))
-        saveAppState()
+        gameThread?.queueClientRequest("s:$gridIndex")
     }
 
     private fun displayCurrPlayer(player: String) {
@@ -237,10 +182,7 @@ class MainActivity : AppCompatActivity() {
         builder.setTitle(getString(R.string.new_game_title_message))
         builder.setMessage(getString(R.string.new_game_confirm_message))
         builder.setPositiveButton(getString(R.string.new_button_message)) { _, _ ->
-            // TODO - convert to a queued request.
-            gameThread?.resetGame()
-            resetGridDisplay()
-            displayCurrPlayer(gameThread?.currPlayer.toString())
+            gameThread?.queueClientRequest("reset:")
         }
         builder.setNegativeButton(getString(R.string.go_back_message)) { _, _ -> }
         builder.show()

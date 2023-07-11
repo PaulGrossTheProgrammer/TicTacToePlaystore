@@ -2,30 +2,28 @@ package game.paulgross.tictactoe
 
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.util.Log
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import java.util.Queue
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.atomic.AtomicBoolean
 
-class GameServer(applicationContext: Context) : Thread() {
+class GameServer(applicationContext: Context, sharedPreferences: SharedPreferences) : Thread() {
 
     var socketServer: SocketServer? = null
-    // TODO
-    // The Socket Server thread creates client handler threads, passing the que to them too.
-    // When a client needs work done, the request queue is added to by the client handler
-    // This Service listens to the request queue, and interacts with the Activity as required.
+
     private val gameRequestQ: BlockingQueue<ClientRequest> = LinkedBlockingQueue()
     fun getRequestQueue(): BlockingQueue<ClientRequest> {
         return gameRequestQ
     }
 
     private val context: Context
+    private val preferences: SharedPreferences
     init {
         // Store the context pointer to allow access to Intent message broadcast system.
         context = applicationContext
+        preferences = sharedPreferences
     }
 
     enum class SquareState {
@@ -59,8 +57,12 @@ class GameServer(applicationContext: Context) : Thread() {
         socketServer = SocketServer(gameRequestQ)
         socketServer!!.start()
 
-        while (working.get()) {
+        restoreGameState()
+        messageUIDisplayGrid()
+        updateWinDisplay()
 
+        while (working.get()) {
+            // TODO - move this to a "server" function so that we can also have a "client" function.
             // TODO - clear at least a few client requests if there are many queued up.
             val request = gameRequestQ.poll()  // Non-blocking read for client requests.
             if (request != null) {
@@ -80,7 +82,7 @@ class GameServer(applicationContext: Context) : Thread() {
                         val gridIndex = Integer.valueOf(indexString)
                         playSquare(gridIndex)
 
-                        responseQ?.add("g:${encodeGrid()}")
+                        responseQ?.add("g:${encodeGrid()}")  // Add curr player. On a new line???
                         messageUIDisplayGrid()
                     }
                     if (requestString == "status:") {
@@ -92,6 +94,11 @@ class GameServer(applicationContext: Context) : Thread() {
                         // Forces the UI to display.
                         messageUIDisplayGrid()
                         updateWinDisplay()
+                    }
+                    if (requestString == "reset:") {
+                        validRequest = true
+                        resetGame()
+                        messageUIDisplayGrid()
                     }
 
                     if (!validRequest) {
@@ -106,8 +113,24 @@ class GameServer(applicationContext: Context) : Thread() {
         Log.d(TAG, "The Game Server has shut down.")
     }
 
-    private fun pause() {
-        // TODO - pause while the MainActivity is suspended or being updated.
+    fun queueClientRequest(request: String) {
+        gameRequestQ.add(ClientRequest(request, null))
+    }
+
+    fun pauseApp() {
+        // TODO - pause App mode while the MainActivity is suspended or being updated.
+    }
+
+    fun resumeApp() {
+        // TODO - resume App.
+    }
+
+    fun pauseGame() {
+        // TODO - put the game into pause mode.
+    }
+
+    fun resumeGame() {
+        // TODO - resume game
     }
 
     fun shutdown() {
@@ -116,6 +139,42 @@ class GameServer(applicationContext: Context) : Thread() {
         socketServer?.shutdown()
     }
 
+    /**
+     * Saves the current App state.
+     *
+     * MUST BE called from overridden onPause() to avoid accidental state loss.
+     */
+    private fun saveGameState() {
+        val editor = preferences.edit()
+
+        // Save the grid state.
+        for (i in 0..8) {
+            editor.putString("Grid$i", grid!![i].toString())
+        }
+
+        editor.putString("CurrPlayer", currPlayer.toString())
+
+        editor.apply()
+        Log.d(TAG, "Saved game state.")
+    }
+
+    /**
+     * Restores the App state from the last time it was running.
+     *
+     * MUST BE called from onCreate().
+     */
+    private fun restoreGameState() {
+        Log.d(TAG, "Restoring previous game state...")
+
+        // Load the previous grid state. Default to Empty if nothing was saved before.
+        for (i in 0..8) {
+            val currState = preferences.getString("Grid$i", "E").toString()
+            grid[i] = SquareState.valueOf(currState)
+        }
+
+        // If there is no current player to restore, default to "X"
+        currPlayer = SquareState.valueOf(preferences.getString("CurrPlayer", "X").toString())
+    }
     private fun messageUIDisplayGrid() {
         val intent = Intent()
         intent.action = context.packageName + "display.UPDATE"
@@ -185,10 +244,11 @@ class GameServer(applicationContext: Context) : Thread() {
 
             Log.d(TAG, "Current Player = $currPlayer")
         }
+
+        saveGameState()
     }
 
     private fun updateWinDisplay(): Boolean {
-        Log.d(TAG, "Checking for win...")
         val winSquares: List<Int>? = getWinningSquares()
         if (winSquares != null) {
             winner = grid[winSquares[0]]
