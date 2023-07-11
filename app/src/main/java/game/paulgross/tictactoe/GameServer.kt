@@ -12,6 +12,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 class GameServer(applicationContext: Context) : Thread() {
 
+    var socketServer: SocketServer? = null
     // TODO
     // The Socket Server thread creates client handler threads, passing the que to them too.
     // When a client needs work done, the request queue is added to by the client handler
@@ -55,8 +56,8 @@ class GameServer(applicationContext: Context) : Thread() {
     private val working = AtomicBoolean(true)
 
     override fun run() {
-        // TODO - make sure we aren't running a thread already...
-        SocketServer(gameRequestQ).start()
+        socketServer = SocketServer(gameRequestQ)
+        socketServer!!.start()
 
         while (working.get()) {
 
@@ -109,9 +110,10 @@ class GameServer(applicationContext: Context) : Thread() {
         // TODO - pause while the MainActivity is suspended or being updated.
     }
 
-    private fun shutdown() {
-//        Log.d(TAG, "The Game Server is shutting down ...")
-//        working.set(false)
+    fun shutdown() {
+        Log.d(TAG, "The Game Server is shutting down ...")
+        working.set(false)
+        socketServer?.shutdown()
     }
 
     private fun messageUIDisplayGrid() {

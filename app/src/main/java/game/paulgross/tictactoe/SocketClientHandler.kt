@@ -8,21 +8,23 @@ import java.io.DataOutputStream
 import java.io.IOException
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
+import java.net.Socket
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.atomic.AtomicBoolean
 
 
-class SocketClientHandler(private val dataInputStream: DataInputStream, private val dataOutputStream: DataOutputStream, private val gameRequestQ: BlockingQueue<GameServer.ClientRequest>) : Thread() {
+class SocketClientHandler(private val socket: Socket, private val dataInputStream: DataInputStream, private val dataOutputStream: DataOutputStream, private val gameRequestQ: BlockingQueue<GameServer.ClientRequest>) : Thread() {
 
     private val responseQ: BlockingQueue<String> = LinkedBlockingQueue()
 
+    private val working = AtomicBoolean(true)
     override fun run() {
         val input = BufferedReader(InputStreamReader(dataInputStream))
         val output = BufferedWriter(OutputStreamWriter(dataOutputStream))
 
         Log.d(TAG, "New client connection handler started ...")
-        var running = true
-        while (running) {
+        while (working.get()) {
             try {
                 Log.d(TAG, "Waiting for client data ...")
                 // Blocking read - wait here for new client data
@@ -32,7 +34,7 @@ class SocketClientHandler(private val dataInputStream: DataInputStream, private 
                 // FIXME - data is a null pointer when client  closes socket. Why?
                 if (data != null) {
                     if (data == "exit") {
-                        running = false
+                        working.set(false)
                     }
 
                     gameRequestQ.add(GameServer.ClientRequest(data, responseQ))
@@ -42,10 +44,10 @@ class SocketClientHandler(private val dataInputStream: DataInputStream, private 
                     output.write("Response = \"$response\"")
                     output.flush()
                 } else {
-                    running = false
+                    working.set(false)
                 }
             } catch (e: IOException) {
-                running = false
+                working.set(false)
                 e.printStackTrace()
                 try {
                     dataInputStream.close()
@@ -54,7 +56,7 @@ class SocketClientHandler(private val dataInputStream: DataInputStream, private 
                     ex.printStackTrace()
                 }
             } catch (e: InterruptedException) {
-                running = false
+                working.set(false)
                 e.printStackTrace()
                 try {
                     dataInputStream.close()
@@ -66,6 +68,13 @@ class SocketClientHandler(private val dataInputStream: DataInputStream, private 
         }
         dataInputStream.close()
         dataOutputStream.close()
+
+        socket.close()
+        Log.d(TAG, "The Client Socket Handler has shut down.")
+    }
+
+    fun shutdown() {
+        working.set(false)
     }
 
     companion object {

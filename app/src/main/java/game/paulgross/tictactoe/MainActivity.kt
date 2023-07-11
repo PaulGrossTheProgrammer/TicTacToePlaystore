@@ -135,16 +135,16 @@ class MainActivity : AppCompatActivity() {
         startGameServer()
         enableMessagesFromGameServer()
 
-        restoreAppState()
+        restoreAppState()  // TODO - can this be moved into the game server???
 
         // Queue a GameService request to update the UI.
+        // TODO - can this be moved into the game server???
         gameServerRequestQ?.add(GameServer.ClientRequest("display:", null))
     }
 
     override fun onStop() {
         super.onStop()
         // TODO - ask the game server to pause until activity awakes again...
-//        stopGameServer()
     }
 
     private fun startGameServer() {
@@ -164,9 +164,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun stopGameServer() {
         Log.d(TAG, "Stopping the game server ...")
-//        gameThread?.shutdown()
-//        gameThread = null
-//        gameServerRequestQ = null
+        gameThread?.shutdown()
     }
 
     /*
@@ -255,7 +253,7 @@ class MainActivity : AppCompatActivity() {
         builder.setTitle(getString(R.string.exit_title_message))
         builder.setMessage(getString(R.string.exit_confirm_message))
         builder.setPositiveButton(getString(R.string.exit_message)) { _, _ ->
-            // TODO - clean up GameServer and close connections.
+            stopGameServer()
             finishAndRemoveTask()
         }
         builder.setNegativeButton(getString(R.string.go_back_message)) { _, _ -> }

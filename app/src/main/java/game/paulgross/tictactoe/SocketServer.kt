@@ -13,6 +13,7 @@ class SocketServer(private val gameRequestQ: BlockingQueue<GameServer.ClientRequ
 
     private var serverSocket: ServerSocket? = null
     private val working = AtomicBoolean(true)
+    private val clientHandlers: MutableList<SocketClientHandler> = arrayListOf();
 
     override fun run() {
         var socket: Socket? = null
@@ -30,15 +31,16 @@ class SocketServer(private val gameRequestQ: BlockingQueue<GameServer.ClientRequ
                     val dataOutputStream = DataOutputStream(socket.getOutputStream())
 
                     // Use threads for each client to communicate with them simultaneously
-                    // TODO - create a return queue for the client handler to get the response.
-                    // One queue per client thread
-                    val t: Thread = SocketClientHandler(dataInputStream, dataOutputStream, gameRequestQ)
+                    val t = SocketClientHandler(socket, dataInputStream, dataOutputStream, gameRequestQ)
                     t.start()
+                    clientHandlers.add(t)
                 } else {
                     Log.e(TAG, "Couldn't create ServerSocket!")
                 }
             }
         } catch (e: IOException) {
+            // Maybe hide this message??? It happens always on shutdown?
+            // FIXME: Can I interrupt the accept() wait and handle this better???
             e.printStackTrace()
             try {
                 socket?.close()
@@ -46,11 +48,19 @@ class SocketServer(private val gameRequestQ: BlockingQueue<GameServer.ClientRequ
                 ex.printStackTrace()
             }
         }
+        Log.d(TAG, "The Socket Server has shut down.")
     }
 
-    fun stopServer() {
-        // Call this from the game server if required
+    fun shutdown() {
+        // FIXME: This doesn't work properly ... visible Exception ...
+        Log.d(TAG, "The Socket Server is shutting down ...")
         working.set(false)
+
+        serverSocket?.close()
+
+        clientHandlers.forEach {handler ->
+            handler.shutdown()
+        }
     }
 
     companion object {
