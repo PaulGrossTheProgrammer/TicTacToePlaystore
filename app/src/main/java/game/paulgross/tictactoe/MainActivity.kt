@@ -207,12 +207,15 @@ class MainActivity : AppCompatActivity() {
      */
     private val gameMessageReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
+            val resetFlag = intent.getBooleanExtra("reset", false)
             val gridStateString = intent.getStringExtra("grid")
             val playerString = intent.getStringExtra("player")
             val winsquaresString = intent.getStringExtra("winsquares")
             val winnerString = intent.getStringExtra("winner")
 
-
+            if (resetFlag) {
+                resetGridDisplay()
+            }
             if (gridStateString != null) {
                 Log.d(TAG, "Received current grid State = [$gridStateString]")
                 displayGrid(gridStateString)

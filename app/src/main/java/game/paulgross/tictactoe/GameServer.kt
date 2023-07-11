@@ -11,20 +11,29 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 class GameServer(applicationContext: Context, sharedPreferences: SharedPreferences) : Thread() {
 
+
     var socketServer: SocketServer? = null
 
     private val gameRequestQ: BlockingQueue<ClientRequest> = LinkedBlockingQueue()
-    fun getRequestQueue(): BlockingQueue<ClientRequest> {
-        return gameRequestQ
-    }
-
     private val context: Context
     private val preferences: SharedPreferences
+
     init {
-        // Store the context pointer to allow access to Intent message broadcast system.
-        context = applicationContext
-        preferences = sharedPreferences
+        context = applicationContext  // To access the Intent message broadcast system.
+        preferences = sharedPreferences  // Used to load and save the game state.
     }
+
+    enum class GameMode {
+        /** Only responds to Activity requests. */
+        LOCAL,
+
+        /** Allow remote users to play using this GameServer. */
+        SERVER,
+
+        /** Connect to a network GameServer. */
+        CLIENT
+    }
+    private var gameMode: GameMode = GameMode.SERVER
 
     enum class SquareState {
         /** Empty square */
@@ -62,55 +71,79 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         updateWinDisplay()
 
         while (working.get()) {
-            // TODO - move this to a "server" function so that we can also have a "client" function.
-            // TODO - clear at least a few client requests if there are many queued up.
-            val request = gameRequestQ.poll()  // Non-blocking read for client requests.
-            if (request != null) {
-                val requestString = request.requestString
-                val responseQ = request.responseQ
 
-                Log.d(TAG, "[$requestString]")
+            if (gameMode == GameMode.SERVER || gameMode == GameMode.LOCAL) {
+                // TODO - clear at least a few client requests if there are many queued up.
+                val request = gameRequestQ.poll()  // Non-blocking read for client requests.
+                if (request != null) {
+                    val requestString = request.requestString
+                    val responseQ = request.responseQ
 
-                if (requestString == "exit") {
-                    responseQ?.add("exit")
-                    // TODO - allow other players to take over client's role ...
-                } else {
-                    var validRequest = false
-                    if (requestString.startsWith("s:", true)!!) {
-                        validRequest = true
-                        val indexString = requestString[2].toString()
-                        val gridIndex = Integer.valueOf(indexString)
-                        playSquare(gridIndex)
+                    Log.d(TAG, "[$requestString]")
 
-                        responseQ?.add("g:${encodeGrid()}")  // Add curr player. On a new line???
-                        messageUIDisplayGrid()
+                    if (gameMode == GameMode.SERVER) {
+                        handleServerRequest(requestString, responseQ)
+                        handleLocalAndServerRequest(requestString, responseQ)
                     }
-                    if (requestString == "status:") {
-                        validRequest = true
-                        responseQ?.add("g:${encodeGrid()}")
-                    }
-                    if (requestString == "display:") {
-                        validRequest = true
-                        // Forces the UI to display.
-                        messageUIDisplayGrid()
-                        updateWinDisplay()
-                    }
-                    if (requestString == "reset:") {
-                        validRequest = true
-                        resetGame()
-                        messageUIDisplayGrid()
-                    }
-
-                    if (!validRequest) {
-                        responseQ?.add("invalid:$requestString")
+                    if (gameMode == GameMode.CLIENT) {
+                        handleClientRequest(requestString)
                     }
                 }
             }
-            Thread.sleep(100L)  // Pause for a short time...
 
-            // If the game is also a player, then this is where the AI is coded.
+            if (gameMode == GameMode.CLIENT) {
+                // TODO: Poll for any response on the SocketClient responseQ.
+            }
+
+            sleep(100L)  // Pause for a short time...
         }
         Log.d(TAG, "The Game Server has shut down.")
+    }
+
+    fun handleClientRequest(requestString: String) {
+        // TODO - use a pointer to the SocketClient to send the request to the network Socket server.
+
+    }
+
+
+    private fun handleServerRequest(requestString: String, responseQ: Queue<String>?) {
+        if (requestString == "exit") {
+            responseQ?.add("exit")
+            // TODO - allow other players to take over client's role ...
+        }
+    }
+
+    private fun handleLocalAndServerRequest(requestString: String, responseQ: Queue<String>?) {
+        var validRequest = false
+        if (requestString.startsWith("s:", true)!!) {
+            validRequest = true
+            val indexString = requestString[2].toString()
+            val gridIndex = Integer.valueOf(indexString)
+            playSquare(gridIndex)
+
+            responseQ?.add("g:${encodeGrid()}")  // Add curr player. On a new line???
+            messageUIDisplayGrid()
+        }
+        if (requestString == "status:") {
+            validRequest = true
+            responseQ?.add("g:${encodeGrid()}")
+        }
+        if (requestString == "display:") {
+            validRequest = true
+            // Forces the UI to display.
+            messageUIDisplayGrid()
+            updateWinDisplay()
+        }
+        if (requestString == "reset:") {
+            validRequest = true
+            resetGame()
+            messageUIResetDisplay()
+            messageUIDisplayGrid()
+        }
+
+        if (!validRequest) {
+            responseQ?.add("invalid:$requestString")
+        }
     }
 
     fun queueClientRequest(request: String) {
@@ -175,6 +208,14 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         // If there is no current player to restore, default to "X"
         currPlayer = SquareState.valueOf(preferences.getString("CurrPlayer", "X").toString())
     }
+
+    private fun messageUIResetDisplay() {
+        val intent = Intent()
+        intent.action = context.packageName + "display.UPDATE"
+        intent.putExtra("reset", true)
+        context.sendBroadcast(intent)
+    }
+
     private fun messageUIDisplayGrid() {
         val intent = Intent()
         intent.action = context.packageName + "display.UPDATE"
