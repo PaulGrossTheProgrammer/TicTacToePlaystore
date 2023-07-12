@@ -45,12 +45,21 @@ class SocketClientHandler(private val socket: Socket, private val dataInputStrea
                     val response = responseQ.take()
                     output.write("Response = \"$response\"")
                     output.flush()
+
+                    if (response == "shutdown:") {
+                        socket.close()
+                    }
                 } else {
                     working.set(false)
                 }
             } catch (e: IOException) {
-                working.set(false)
-                e.printStackTrace()
+                if (!working.get()) {
+                    // the socket is closed because this handler is shutting down
+                    Log.d(TAG, "The Socket has closed and we are shutting down.")
+                } else {
+                    working.set(false)
+                    e.printStackTrace()
+                }
                 try {
                     dataInputStream.close()
                     dataOutputStream.close()
@@ -77,9 +86,10 @@ class SocketClientHandler(private val socket: Socket, private val dataInputStrea
 
     fun shutdown() {
         working.set(false)
+        socket.close()  // FIXME: Does this work???
 
-        // TODO - figure out how to interrupt the queue wait.
-        // Maybe insert a null???
+        // This will release the thread if it's waiting on the queue.
+        responseQ.add("shutdown:")
     }
 
     companion object {

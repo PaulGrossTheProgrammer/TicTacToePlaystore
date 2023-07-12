@@ -58,7 +58,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
     var currPlayer: SquareState = SquareState.X
     var winner = SquareState.E
 
-    data class ClientRequest(val requestString: String, val responseQ: Queue<String>?)
+    data class ClientRequest(val requestString: String, val responseQ: Queue<String?>?)
 
     private val working = AtomicBoolean(true)
 
@@ -106,7 +106,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
     }
 
 
-    private fun handleServerRequest(requestString: String, responseQ: Queue<String>?) {
+    private fun handleServerRequest(requestString: String, responseQ: Queue<String?>?) {
         if (requestString == "exit") {
             responseQ?.add("exit")
             // TODO - allow other players to take over client's role ...
@@ -123,7 +123,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         }
     }
 
-    private fun handleLocalAndServerRequest(requestString: String, responseQ: Queue<String>?) {
+    private fun handleLocalAndServerRequest(requestString: String, responseQ: Queue<String?>?) {
         var validRequest = false
         if (requestString.startsWith("s:", true)) {
             validRequest = true
