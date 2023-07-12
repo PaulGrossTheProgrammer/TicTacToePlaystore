@@ -5,6 +5,9 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.res.Configuration
+import android.net.ConnectivityManager
+import android.net.wifi.WifiInfo
+import android.net.wifi.WifiManager
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -14,7 +17,8 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import java.util.concurrent.BlockingQueue
+import java.math.BigInteger
+import java.net.InetAddress
 
 
 class MainActivity : AppCompatActivity() {
@@ -86,6 +90,17 @@ class MainActivity : AppCompatActivity() {
 
         enableMessagesFromGameServer()
         startGameServer()
+
+        // TODO: Access the IP address within the Game Server.
+        val cm: ConnectivityManager = getSystemService(ConnectivityManager::class.java)
+        val n = cm.activeNetwork
+        val lp = cm.getLinkProperties(n)
+        val addrs = lp?.linkAddresses
+        Log.d(TAG, "IP Address List:")
+        addrs?.forEach { addr ->
+            Log.d(TAG, "IP Address: $addr")
+            Log.d(TAG, "IP Address: ${addr.address}")
+        }
     }
 
     override fun onStop() {
