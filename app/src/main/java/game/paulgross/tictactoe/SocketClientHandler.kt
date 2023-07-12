@@ -14,7 +14,8 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.atomic.AtomicBoolean
 
 
-class SocketClientHandler(private val socket: Socket, private val dataInputStream: DataInputStream, private val dataOutputStream: DataOutputStream, private val gameRequestQ: BlockingQueue<GameServer.ClientRequest>) : Thread() {
+class SocketClientHandler(private val socket: Socket, private val dataInputStream: DataInputStream, private val dataOutputStream: DataOutputStream,
+                          private val gameRequestQ: BlockingQueue<GameServer.ClientRequest>, private val socketServer: SocketServer) : Thread() {
 
     private val responseQ: BlockingQueue<String> = LinkedBlockingQueue()
 
@@ -35,6 +36,7 @@ class SocketClientHandler(private val socket: Socket, private val dataInputStrea
                 if (data != null) {
                     if (data == "exit") {
                         working.set(false)
+                        socketServer.removeClientHandler(this)
                     }
 
                     gameRequestQ.add(GameServer.ClientRequest(data, responseQ))
@@ -75,6 +77,9 @@ class SocketClientHandler(private val socket: Socket, private val dataInputStrea
 
     fun shutdown() {
         working.set(false)
+
+        // TODO - figure out how to interrupt the queue wait.
+        // Maybe insert a null???
     }
 
     companion object {

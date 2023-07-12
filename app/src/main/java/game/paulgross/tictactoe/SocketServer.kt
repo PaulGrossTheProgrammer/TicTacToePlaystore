@@ -31,16 +31,19 @@ class SocketServer(private val gameRequestQ: BlockingQueue<GameServer.ClientRequ
                     val dataOutputStream = DataOutputStream(socket.getOutputStream())
 
                     // Use threads for each client to communicate with them simultaneously
-                    val t = SocketClientHandler(socket, dataInputStream, dataOutputStream, gameRequestQ)
+                    val t = SocketClientHandler(socket, dataInputStream, dataOutputStream, gameRequestQ, this)
                     t.start()
+
+                    // TODO - determine how to remove handlers from the list
                     clientHandlers.add(t)
                 } else {
                     Log.e(TAG, "Couldn't create ServerSocket!")
                 }
             }
+        } catch (e: InterruptedException) {
+            // FIXME - this doesn't work
+            Log.d(TAG, "The Socket Server has been forced to stop listening for connections.")
         } catch (e: IOException) {
-            // Maybe hide this message??? It happens always on shutdown?
-            // FIXME: Can I interrupt the accept() wait and handle this better???
             e.printStackTrace()
             try {
                 socket?.close()
@@ -51,16 +54,23 @@ class SocketServer(private val gameRequestQ: BlockingQueue<GameServer.ClientRequ
         Log.d(TAG, "The Socket Server has shut down.")
     }
 
-    fun shutdown() {
-        // FIXME: This doesn't work properly ... visible Exception ...
+    fun shutdown(socketServer: SocketServer) {
         Log.d(TAG, "The Socket Server is shutting down ...")
         working.set(false)
 
+        // FIXME - this doesn't work
+        socketServer.interrupt()  // This should force the thread to stop waiting for socket connections.
+
         serverSocket?.close()
 
+        Log.d(TAG, "The Socket Server has ${clientHandlers.size} open Client Handlers.")
         clientHandlers.forEach {handler ->
             handler.shutdown()
         }
+    }
+
+    fun removeClientHandler(socketClientHandler: SocketClientHandler) {
+        clientHandlers.remove(socketClientHandler)
     }
 
     companion object {

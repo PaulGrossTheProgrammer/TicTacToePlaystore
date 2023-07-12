@@ -111,11 +111,21 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             responseQ?.add("exit")
             // TODO - allow other players to take over client's role ...
         }
+        if (requestString == "display:") {
+            // Forces the UI to display.
+            messageUIDisplayGrid()
+            updateWinDisplay()
+        }
+        if (requestString == "reset:") {
+            resetGame()
+            messageUIResetDisplay()
+            messageUIDisplayGrid()
+        }
     }
 
     private fun handleLocalAndServerRequest(requestString: String, responseQ: Queue<String>?) {
         var validRequest = false
-        if (requestString.startsWith("s:", true)!!) {
+        if (requestString.startsWith("s:", true)) {
             validRequest = true
             val indexString = requestString[2].toString()
             val gridIndex = Integer.valueOf(indexString)
@@ -127,18 +137,6 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         if (requestString == "status:") {
             validRequest = true
             responseQ?.add("g:${encodeGrid()}")
-        }
-        if (requestString == "display:") {
-            validRequest = true
-            // Forces the UI to display.
-            messageUIDisplayGrid()
-            updateWinDisplay()
-        }
-        if (requestString == "reset:") {
-            validRequest = true
-            resetGame()
-            messageUIResetDisplay()
-            messageUIDisplayGrid()
         }
 
         if (!validRequest) {
@@ -169,7 +167,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
     fun shutdown() {
         Log.d(TAG, "The Game Server is shutting down ...")
         working.set(false)
-        socketServer?.shutdown()
+        socketServer?.shutdown(socketServer!!)
     }
 
     /**
