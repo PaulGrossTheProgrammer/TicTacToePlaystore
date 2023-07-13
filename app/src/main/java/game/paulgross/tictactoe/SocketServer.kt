@@ -64,6 +64,6 @@ class SocketServer(private val gameRequestQ: BlockingQueue<GameServer.ClientRequ
 
     companion object {
         private val TAG = SocketServer::class.java.simpleName
-        private const val PORT = 6868
+        const val PORT = 6868
     }
 }

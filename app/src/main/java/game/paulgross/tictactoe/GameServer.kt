@@ -6,6 +6,7 @@ import android.content.SharedPreferences
 import android.net.ConnectivityManager
 import android.util.Log
 import androidx.core.content.getSystemService
+import java.lang.Exception
 import java.net.InetAddress
 import java.util.Queue
 import java.util.concurrent.BlockingQueue
@@ -68,6 +69,14 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
     override fun run() {
         socketServer = SocketServer(gameRequestQ)
         socketServer!!.start()
+
+        // TODO: Experimental client
+        try {
+            val socketClient = SocketClient("192.168.1.106", SocketServer.PORT)
+            socketClient.start()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
 
         // TODO: Experimenting with getting the IP address
         val cm: ConnectivityManager = context.getSystemService(ConnectivityManager::class.java)
