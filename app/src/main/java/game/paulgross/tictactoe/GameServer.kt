@@ -70,13 +70,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         socketServer = SocketServer(gameRequestQ)
         socketServer!!.start()
 
-        // TODO: Experimental client
-        try {
-            val socketClient = SocketClient("192.168.1.106", SocketServer.PORT)
-            socketClient.start()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+
 
         // TODO: Experimenting with getting the IP address
         val cm: ConnectivityManager = context.getSystemService(ConnectivityManager::class.java)
@@ -94,6 +88,9 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         messageUIDisplayGrid()
         updateWinDisplay()
 
+        // TODO: Experimental client
+        var tempClientTestRun = true
+
         while (working.get()) {
             val request = gameRequestQ.poll()  // Non-blocking read for client requests.
             var requestString: String? = null
@@ -106,7 +103,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             if (gameMode == GameMode.SERVER || gameMode == GameMode.LOCAL) {
                 // TODO - clear at least a few client requests if there are many queued up.
                 if (requestString != null) {
-                    Log.d(TAG, "[$requestString]")
+                    Log.d(TAG, "Received Request: [$requestString]")
 
                     if (responseQ == null) {
                         // Local requests don't have a response Queue.
@@ -130,6 +127,16 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
             // Adjust this period based on context. Fast for server, slower for client.
             sleep(100L)  // Pause for a short time...
+
+            if (tempClientTestRun) {
+                tempClientTestRun = false
+                try {
+                    val socketClient = SocketClient("192.168.1.112", SocketServer.PORT)
+                    socketClient.start()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
         }
         Log.d(TAG, "The Game Server has shut down.")
     }
@@ -150,6 +157,8 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
     }
 
     private fun handleServerRequest(requestString: String, responseQ: Queue<String?>?) {
+        Log.d(TAG, "handleServerRequest: [$requestString]")
+
         var validRequest = false
         if (requestString.startsWith("s:", true)) {
             validRequest = true
@@ -162,6 +171,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         }
         if (requestString == "status:") {
             validRequest = true
+            Log.d(TAG, "Handling status ...")
             responseQ?.add("g:${encodeGrid()}")
         }
         if (requestString == "exit:") {
@@ -171,6 +181,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         }
 
         if (!validRequest) {
+            Log.d(TAG, "invalid request: [$requestString]")
             responseQ?.add("invalid:$requestString")
         }
     }

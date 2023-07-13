@@ -21,6 +21,9 @@ class SocketClient(private val server: String, private val port: Int): Thread() 
             input = BufferedReader (InputStreamReader(clientSocket.getInputStream()));
 
             output.println("status:\n")
+            output.flush()
+            Log.i(TAG, "Sent status request...")
+
             var response = input.readLine()
             Log.i(TAG, "Server response [$response]")
 

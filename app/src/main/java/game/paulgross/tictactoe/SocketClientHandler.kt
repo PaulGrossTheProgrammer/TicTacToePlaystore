@@ -39,7 +39,9 @@ class SocketClientHandler(private val socket: Socket, private val gameRequestQ: 
                         socketServer.removeClientHandler(this)
                     }
 
+                    Log.d(TAG, "About to queue request [$data]")
                     gameRequestQ.add(GameServer.ClientRequest(data, responseQ))
+                    Log.d(TAG, "Request queued. Waiting for response ...")
 
                     // Wait here for the GameService to respond to the request.
                     val response = responseQ.take()
@@ -50,7 +52,7 @@ class SocketClientHandler(private val socket: Socket, private val gameRequestQ: 
                         socket.close()
                     }
                 } else {
-                    // FIXME: Empty data from client. Why? Is it correct to this socket???
+                    // FIXME: Empty data from client. Why? Is it correct to close this socket???
                     working.set(false)
                 }
             } catch (e: IOException) {
