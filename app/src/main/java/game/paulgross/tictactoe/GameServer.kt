@@ -3,7 +3,10 @@ package game.paulgross.tictactoe
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.net.ConnectivityManager
 import android.util.Log
+import androidx.core.content.getSystemService
+import java.net.InetAddress
 import java.util.Queue
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
@@ -12,7 +15,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 class GameServer(applicationContext: Context, sharedPreferences: SharedPreferences) : Thread() {
 
 
-    var socketServer: SocketServer? = null
+    private var socketServer: SocketServer? = null
 
     private val gameRequestQ: BlockingQueue<ClientRequest> = LinkedBlockingQueue()
     private val context: Context
@@ -66,56 +69,70 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         socketServer = SocketServer(gameRequestQ)
         socketServer!!.start()
 
+        // TODO: Experimenting with getting the IP address
+        val cm: ConnectivityManager = context.getSystemService(ConnectivityManager::class.java)
+        val n = cm.activeNetwork
+        val lp = cm.getLinkProperties(n)
+        val addrs = lp?.linkAddresses
+        Log.d(TAG, "IP Address List:")
+        addrs?.forEach { addr ->
+            val a: InetAddress = addr.address
+            a.hostAddress
+            Log.d(TAG, "IP Address: ${a.hostAddress}")
+        }
+
         restoreGameState()
         messageUIDisplayGrid()
         updateWinDisplay()
 
         while (working.get()) {
+            val request = gameRequestQ.poll()  // Non-blocking read for client requests.
+            var requestString: String? = null
+            var responseQ: Queue<String?>? = null
 
+            if (request != null) {
+                requestString = request.requestString
+                responseQ = request.responseQ
+            }
             if (gameMode == GameMode.SERVER || gameMode == GameMode.LOCAL) {
                 // TODO - clear at least a few client requests if there are many queued up.
-                val request = gameRequestQ.poll()  // Non-blocking read for client requests.
-                if (request != null) {
-                    val requestString = request.requestString
-                    val responseQ = request.responseQ
-
+                if (requestString != null) {
                     Log.d(TAG, "[$requestString]")
 
-                    if (gameMode == GameMode.SERVER) {
-                        handleServerRequest(requestString, responseQ)
-                        handleLocalAndServerRequest(requestString, responseQ)
+                    if (responseQ == null) {
+                        // Local requests don't have a response Queue.
+                        handleLocalRequest(requestString)
                     }
-                    if (gameMode == GameMode.CLIENT) {
-                        handleClientRequest(requestString)
-                    }
+
+                    handleServerRequest(requestString, responseQ)
                 }
             }
 
             if (gameMode == GameMode.CLIENT) {
-                // TODO: Poll for any response on the SocketClient responseQ.
+                if (requestString != null) {
+                    handleClientRequest(requestString)
+                }
+
+                // TODO: Periodically send a non-blocking call to the SocketClient to ask for 'status:'
+
+                // TODO: Poll for any response on the SocketClient responseQ, and display the result.
+//                messageUIDisplayGrid()
             }
 
+            // Adjust this period based on context. Fast for server, slower for client.
             sleep(100L)  // Pause for a short time...
         }
         Log.d(TAG, "The Game Server has shut down.")
     }
 
-    fun handleClientRequest(requestString: String) {
-        // TODO - use a pointer to the SocketClient to send the request to the network Socket server.
-
+    private fun handleClientRequest(requestString: String) {
+        if (requestString.startsWith("s:", true)) {
+            // TODO: If a square is played, send a non-blocking call to play a move to the SocketClient
+            // The socket client passes it on the the socket server, then waits for a response,
+            // then queues the response onto the responseQ
+        }
     }
-
-
-    private fun handleServerRequest(requestString: String, responseQ: Queue<String?>?) {
-        if (requestString == "exit") {
-            responseQ?.add("exit")
-            // TODO - allow other players to take over client's role ...
-        }
-        if (requestString == "display:") {
-            // Forces the UI to display.
-            messageUIDisplayGrid()
-            updateWinDisplay()
-        }
+    private fun handleLocalRequest(requestString: String) {
         if (requestString == "reset:") {
             resetGame()
             messageUIResetDisplay()
@@ -123,7 +140,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         }
     }
 
-    private fun handleLocalAndServerRequest(requestString: String, responseQ: Queue<String?>?) {
+    private fun handleServerRequest(requestString: String, responseQ: Queue<String?>?) {
         var validRequest = false
         if (requestString.startsWith("s:", true)) {
             validRequest = true
@@ -137,6 +154,11 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         if (requestString == "status:") {
             validRequest = true
             responseQ?.add("g:${encodeGrid()}")
+        }
+        if (requestString == "exit:") {
+            validRequest = true
+            responseQ?.add("exit:done")
+            // TODO - allow other players to take over client's role ...
         }
 
         if (!validRequest) {
@@ -167,7 +189,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
     fun shutdown() {
         Log.d(TAG, "The Game Server is shutting down ...")
         working.set(false)
-        socketServer?.shutdown(socketServer!!)
+        socketServer?.shutdown()
     }
 
     /**

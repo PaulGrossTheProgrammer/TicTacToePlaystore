@@ -14,27 +14,27 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.atomic.AtomicBoolean
 
 
-class SocketClientHandler(private val socket: Socket, private val dataInputStream: DataInputStream, private val dataOutputStream: DataOutputStream,
-                          private val gameRequestQ: BlockingQueue<GameServer.ClientRequest>, private val socketServer: SocketServer) : Thread() {
+class SocketClientHandler(private val socket: Socket, private val gameRequestQ: BlockingQueue<GameServer.ClientRequest>, private val socketServer: SocketServer) : Thread() {
 
     private val responseQ: BlockingQueue<String> = LinkedBlockingQueue()
 
     private val working = AtomicBoolean(true)
     override fun run() {
-        val input = BufferedReader(InputStreamReader(dataInputStream))
-        val output = BufferedWriter(OutputStreamWriter(dataOutputStream))
+        val input = BufferedReader(InputStreamReader(DataInputStream(socket.getInputStream())))
+        val output = BufferedWriter(OutputStreamWriter(DataOutputStream(socket.getOutputStream())))
 
         Log.d(TAG, "New client connection handler started ...")
         while (working.get()) {
             try {
                 Log.d(TAG, "Waiting for client data ...")
-                // Blocking read - wait here for new client data
+                // Wait here for new client data
                 val data = input.readLine()
                 Log.d(TAG, "Got data = [$data]")
 
                 // FIXME - data is a null pointer when client  closes socket. Why?
                 if (data != null) {
-                    if (data == "exit") {
+                    // TODO - make sure 'exit:' text is coded in both Handler and GameServer classes
+                    if (data == "exit:") {
                         working.set(false)
                         socketServer.removeClientHandler(this)
                     }
@@ -50,6 +50,7 @@ class SocketClientHandler(private val socket: Socket, private val dataInputStrea
                         socket.close()
                     }
                 } else {
+                    // FIXME: Empty data from client. Why? Is it correct to this socket???
                     working.set(false)
                 }
             } catch (e: IOException) {
@@ -61,8 +62,8 @@ class SocketClientHandler(private val socket: Socket, private val dataInputStrea
                     e.printStackTrace()
                 }
                 try {
-                    dataInputStream.close()
-                    dataOutputStream.close()
+                    input.close()
+                    output.close()
                 } catch (ex: IOException) {
                     ex.printStackTrace()
                 }
@@ -70,15 +71,15 @@ class SocketClientHandler(private val socket: Socket, private val dataInputStrea
                 working.set(false)
                 e.printStackTrace()
                 try {
-                    dataInputStream.close()
-                    dataOutputStream.close()
+                    input.close()
+                    output.close()
                 } catch (ex: IOException) {
                     ex.printStackTrace()
                 }
             }
         }
-        dataInputStream.close()
-        dataOutputStream.close()
+        input.close()
+        output.close()
 
         socket.close()
         Log.d(TAG, "The Client Socket Handler has shut down.")

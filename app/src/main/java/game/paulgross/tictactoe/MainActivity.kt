@@ -90,17 +90,6 @@ class MainActivity : AppCompatActivity() {
 
         enableMessagesFromGameServer()
         startGameServer()
-
-        // TODO: Access the IP address within the Game Server.
-        val cm: ConnectivityManager = getSystemService(ConnectivityManager::class.java)
-        val n = cm.activeNetwork
-        val lp = cm.getLinkProperties(n)
-        val addrs = lp?.linkAddresses
-        Log.d(TAG, "IP Address List:")
-        addrs?.forEach { addr ->
-            Log.d(TAG, "IP Address: $addr")
-            Log.d(TAG, "IP Address: ${addr.address}")
-        }
     }
 
     override fun onStop() {
@@ -109,6 +98,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startGameServer() {
+        // First check to see if the GameServer is already running...
         gameThread = viewModel.getGameServer()
 
         if (gameThread != null) {
@@ -119,8 +109,6 @@ class MainActivity : AppCompatActivity() {
             gameThread?.start()
             viewModel.setGameServer(gameThread!!)
         }
-
-//        gameServerRequestQ = gameThread?.getRequestQueue()
     }
 
     private fun stopGameServer() {

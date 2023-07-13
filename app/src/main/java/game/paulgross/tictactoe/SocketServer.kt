@@ -1,8 +1,6 @@
 package game.paulgross.tictactoe
 
 import android.util.Log
-import java.io.DataInputStream
-import java.io.DataOutputStream
 import java.io.IOException
 import java.net.ServerSocket
 import java.net.Socket
@@ -11,33 +9,28 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 class SocketServer(private val gameRequestQ: BlockingQueue<GameServer.ClientRequest>): Thread() {
 
-    private var serverSocket: ServerSocket? = null
+    private lateinit var serverSocket: ServerSocket
     private val working = AtomicBoolean(true)
-    private val clientHandlers: MutableList<SocketClientHandler> = arrayListOf();
+    private val clientHandlers: MutableList<SocketClientHandler> = arrayListOf()
 
     override fun run() {
         var socket: Socket? = null
         try {
             serverSocket = ServerSocket(PORT)
-
-            Log.d(TAG, "Created ServerSocket for ${serverSocket!!.localSocketAddress}")
+            Log.d(TAG, "Created ServerSocket for ${serverSocket.localSocketAddress}")
 
             while (working.get()) {
-                if (serverSocket != null) {
-                    Log.i(TAG, "Waiting for new client sockets...")
-                    socket = serverSocket!!.accept()
-                    Log.i(TAG, "New client: $socket")
-                    val dataInputStream = DataInputStream(socket.getInputStream())
-                    val dataOutputStream = DataOutputStream(socket.getOutputStream())
+                Log.i(TAG, "Waiting for new client sockets...")
+                socket = serverSocket.accept()
+                Log.i(TAG, "New client: $socket")
 
-                    // Use threads for each client to communicate with them simultaneously
-                    val t = SocketClientHandler(socket, dataInputStream, dataOutputStream, gameRequestQ, this)
-                    t.start()
+                // Create a new Thread for each client.
+                val t = SocketClientHandler(socket, gameRequestQ, this)
+                t.start()
 
-                    clientHandlers.add(t)
-                } else {
-                    Log.e(TAG, "Couldn't create ServerSocket!")
-                }
+                // This list allows us to remove each Handler if the client disconnects
+                // by calling removeClientHandler().
+                clientHandlers.add(t)
             }
         } catch (e: IOException) {
             if (!working.get()){
@@ -54,10 +47,10 @@ class SocketServer(private val gameRequestQ: BlockingQueue<GameServer.ClientRequ
         Log.d(TAG, "The Socket Server has shut down.")
     }
 
-    fun shutdown(socketServer: SocketServer) {
+    fun shutdown() {
         Log.d(TAG, "The Socket Server is shutting down ...")
         working.set(false)
-        serverSocket?.close()
+        serverSocket.close()
 
         Log.d(TAG, "The Socket Server has ${clientHandlers.size} open Client Handlers.")
         clientHandlers.forEach {handler ->
