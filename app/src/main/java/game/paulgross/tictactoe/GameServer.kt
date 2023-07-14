@@ -70,19 +70,23 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         socketServer = SocketServer(gameRequestQ)
         socketServer!!.start()
 
-
-
         // TODO: Experimenting with getting the IP address
         val cm: ConnectivityManager = context.getSystemService(ConnectivityManager::class.java)
         val n = cm.activeNetwork
         val lp = cm.getLinkProperties(n)
         val addrs = lp?.linkAddresses
+        var thisIpAddress: String? = null
         Log.d(TAG, "IP Address List:")
         addrs?.forEach { addr ->
-            val a: InetAddress = addr.address
-            a.hostAddress
-            Log.d(TAG, "IP Address: ${a.hostAddress}")
+            val currIpAddress = addr.address.hostAddress
+            Log.d(TAG, "IP Address: $currIpAddress")
+            if (currIpAddress.contains('.')) {
+                Log.d(TAG, "IP Address valid format")
+                thisIpAddress = currIpAddress
+            }
         }
+        Log.d(TAG, "Chosen IP Address: $thisIpAddress")
+        messageUIDisplayIpAddress(thisIpAddress!!)
 
         restoreGameState()
         messageUIDisplayGrid()
@@ -256,6 +260,13 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         context.sendBroadcast(intent)
     }
 
+    private fun messageUIDisplayIpAddress(addr: String) {
+        Log.d(TAG, "About to send IP Address: $addr to display ...")
+        val intent = Intent()
+        intent.action = context.packageName + "display.UPDATE"
+        intent.putExtra("ipaddress", addr)
+        context.sendBroadcast(intent)
+    }
     private fun messageUIDisplayGrid() {
         val intent = Intent()
         intent.action = context.packageName + "display.UPDATE"

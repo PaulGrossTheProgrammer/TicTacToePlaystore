@@ -210,12 +210,24 @@ class MainActivity : AppCompatActivity() {
      */
     private val gameMessageReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
+            Log.d(TAG, "Received broadcast message = [$intent]")
+
             val resetFlag = intent.getBooleanExtra("reset", false)
             val gridStateString = intent.getStringExtra("grid")
             val playerString = intent.getStringExtra("player")
             val winsquaresString = intent.getStringExtra("winsquares")
             val winnerString = intent.getStringExtra("winner")
+            val ipAddress = intent.getStringExtra("ipaddress")
 
+            if (ipAddress != null) {
+                if (ipAddress.length > 1) {
+                    Log.d(TAG, "Received IP Address = [$ipAddress]")
+                    findViewById<TextView>(R.id.textViewIPAddress).text = ipAddress
+                } else {
+                    // FIXME - why does this even happen???
+                    Log.d(TAG, "Received BAD IP Address = [$ipAddress]")
+                }
+            }
             if (resetFlag) {
                 resetGridDisplay()
             }

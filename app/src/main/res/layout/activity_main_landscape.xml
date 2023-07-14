@@ -7,6 +7,17 @@
     tools:context=".MainActivity">
 
     <TextView
+        android:id="@+id/textViewIPAddress3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="IP Address"
+        android:textSize="24sp"
+        app:layout_constraintEnd_toStartOf="@+id/textSquare4"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textPlayer" />
+
+    <TextView
         android:id="@+id/textTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
