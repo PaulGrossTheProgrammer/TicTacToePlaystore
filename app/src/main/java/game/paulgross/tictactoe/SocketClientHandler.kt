@@ -45,7 +45,8 @@ class SocketClientHandler(private val socket: Socket, private val gameRequestQ: 
 
                     // Wait here for the GameService to respond to the request.
                     val response = responseQ.take()
-                    output.write("Response = \"$response\"")
+                    output.write(response)
+                    output.write("\n")
                     output.flush()
 
                     if (response == "shutdown:") {

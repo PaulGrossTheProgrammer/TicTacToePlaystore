@@ -2,6 +2,7 @@ package game.paulgross.tictactoe
 
 import android.util.Log
 import java.io.BufferedReader
+import java.io.DataInputStream
 import java.io.InputStreamReader
 import java.io.PrintWriter
 import java.net.Socket
@@ -12,22 +13,27 @@ class SocketClient(private val server: String, private val port: Int): Thread() 
     private val working = AtomicBoolean(true)
 
     lateinit var output: PrintWriter
+//    lateinit var input: DataInputStream
     lateinit var input: BufferedReader
 
     override fun run() {
-        while (working.get()) {
-            Log.i(TAG, "Client connected...")
-            output = PrintWriter(clientSocket.getOutputStream());
-            input = BufferedReader (InputStreamReader(clientSocket.getInputStream()));
+        Log.i(TAG, "Client connected...")
+        output = PrintWriter(clientSocket.getOutputStream());
+        input = BufferedReader(InputStreamReader(clientSocket.getInputStream()));
 
-            output.println("status:\n")
+        var requestNumber = 0
+        while (working.get()) {
+            requestNumber ++
+            Log.i(TAG, "About to send status request ...")
+            output.println("status:")
             output.flush()
             Log.i(TAG, "Sent status request...")
 
+            Log.i(TAG, "About to get server response ...")
             var response = input.readLine()
             Log.i(TAG, "Server response [$response]")
 
-            sleep(2000L)  // Pause for a short time...
+            sleep(5000L)  // Pause for a short time...
         }
     }
 
