@@ -219,17 +219,12 @@ class MainActivity : AppCompatActivity() {
             val winnerString = intent.getStringExtra("winner")
             val ipAddress = intent.getStringExtra("ipaddress")
 
-            if (ipAddress != null) {
-                if (ipAddress.length > 1) {
-                    Log.d(TAG, "Received IP Address = [$ipAddress]")
-                    findViewById<TextView>(R.id.textViewIPAddress).text = ipAddress
-                } else {
-                    // FIXME - why does this even happen???
-                    Log.d(TAG, "Received BAD IP Address = [$ipAddress]")
-                }
-            }
             if (resetFlag) {
                 resetGridDisplay()
+            }
+            if (ipAddress != null) {
+                Log.d(TAG, "Received IP Address = [$ipAddress]")
+                findViewById<TextView>(R.id.textViewIPAddress).text = ipAddress
             }
             if (gridStateString != null) {
                 Log.d(TAG, "Received current grid State = [$gridStateString]")
