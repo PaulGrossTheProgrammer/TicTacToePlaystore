@@ -110,6 +110,8 @@ class MainActivity : AppCompatActivity() {
 
         if (localGameServer != null) {
             Log.d(TAG, "Reattached to the local GameServer.")
+            // FIXME - this doesn't work to update the display!!!???
+            localGameServer?.queueClientRequest("update:")
         } else {
             Log.d(TAG, "Starting a new local GameServer ...")
             localGameServer = GameServer(applicationContext, getPreferences(MODE_PRIVATE))

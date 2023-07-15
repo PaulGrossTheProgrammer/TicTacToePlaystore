@@ -75,14 +75,11 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         val n = cm.activeNetwork
         val lp = cm.getLinkProperties(n)
         val addrs = lp?.linkAddresses
-//        var thisIpAddress: String? = null
         val allIpAddresses: MutableList<String> = mutableListOf()
         Log.d(TAG, "IP Address List:")
         addrs?.forEach { addr ->
             val currIpAddress = addr.address.hostAddress
             Log.d(TAG, "IP Address: $currIpAddress")
-//            if (currIpAddress.contains('.')) {
-//            }
             Log.d(TAG, "IP Address valid format")
             val thisIpAddress = currIpAddress
             allIpAddresses.add(thisIpAddress)
@@ -270,7 +267,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         var listAsString = ""
         addrList.forEach { addr ->
             if (!listAsString.isEmpty()) {
-                listAsString += " ,"
+                listAsString += ", "
             }
             listAsString += addr
         }
