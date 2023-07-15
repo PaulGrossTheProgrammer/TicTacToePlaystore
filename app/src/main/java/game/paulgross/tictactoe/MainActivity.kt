@@ -5,9 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.res.Configuration
-import android.net.ConnectivityManager
-import android.net.wifi.WifiInfo
-import android.net.wifi.WifiManager
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -17,20 +14,14 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import java.math.BigInteger
-import java.net.InetAddress
 
 
 class MainActivity : AppCompatActivity() {
-    // The ViewModel and its Factory ensures that we recover a link to the GameServer after screen rotation.
-    private lateinit var viewModel: ActivityViewModel
-    private lateinit var viewModelFactory: ActivityViewModelFactory
 
-    private var gameThread: GameServer? = null
+    private var localGameServer: GameServer? = null
 
     private var displaySquareList: MutableList<TextView?> = mutableListOf()
 
-    private var colorOfReset: Int? = null
     private var colorOfWinning: Int? = null
 
     private var textPlayerView: TextView? = null
@@ -40,36 +31,38 @@ class MainActivity : AppCompatActivity() {
         super.onPause()
 
         // TODO: Because screen rotation calls onPause()...
-        //  ... decide how best to handle open sockets.
-        //  Should sockets be closed later in the lifecycle?
-        //  Perhaps the socket threads are created in onStart() and destroyed in onStop()?
-        //  But if the App is being destroyed by the system, onStop() is never called...?
-        //  Will the system clean up the open comms sockets?
-        //  If we store the list of sockets we can still close the server thread
-        //  and when onCreate is called again the list should still be valid.
         //  Maybe track "paused" flag so clients temporarily pause comms???
         //  What happens if the user makes a move during the rotate pause?
         //  Clients need to be sent the PAUSED state
         //  In PAUSED state no new client GUI actions can be started until PAUSED clears.
         //  In PAUSED state Server stops processing the client queue.
         //  After leaving PAUSED state, server resumes queue processing.
-        //  NOTE that the client queue is timestamped, and old client actions are removed.
-        //  So if the onPause is quickly resumed, the client will likely never notice.
+        //  NOTE should put a timestamp in the client queue,so that old client actions are removed.
+        //  But if the onPause is quickly resumed, the client will likely never notice.
     }
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        viewModelFactory = ActivityViewModelFactory()
+        if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
+            setContentView(R.layout.activity_main)
+        } else {
+            setContentView(R.layout.activity_main_landscape)
+        }
+        /*if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            setContentView(R.layout.activity_main_landscape)
+        } else {
+            //The default layout is portrait
+            setContentView(R.layout.activity_main)
+        }*/
+/*        viewModelFactory = ActivityViewModelFactory()
         viewModel = ViewModelProvider(this, viewModelFactory).get(ActivityViewModel::class.java)
-
         if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
             setContentView(R.layout.activity_main_landscape)
         } else {
             //The default layout is portrait
             setContentView(R.layout.activity_main)
-        }
+        }*/
 
         // Add all the display squares into the list.
         // NOTE: The squares MUST BE added in index order.
@@ -89,7 +82,7 @@ class MainActivity : AppCompatActivity() {
         textPlayerView = findViewById(R.id.textPlayer)
 
         enableMessagesFromGameServer()
-        startGameServer()
+        attachToLocalGameServer()
     }
 
     override fun onStop() {
@@ -97,23 +90,37 @@ class MainActivity : AppCompatActivity() {
         // TODO - ask the game server to pause until activity awakes again...
     }
 
-    private fun startGameServer() {
-        // First check to see if the GameServer is already running...
-        gameThread = viewModel.getGameServer()
-
-        if (gameThread != null) {
-            Log.d(TAG, "Reattached to the original GameServer.")
+/*    private fun reAttachToGameServer() {
+        viewModelFactory = ActivityViewModelFactory()
+        viewModel = ViewModelProvider(this, viewModelFactory).get(ActivityViewModel::class.java)
+        if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            setContentView(R.layout.activity_main_landscape)
         } else {
-            Log.d(TAG, "Starting the GameServer ...")
-            gameThread = GameServer(applicationContext, getPreferences(MODE_PRIVATE))
-            gameThread?.start()
-            viewModel.setGameServer(gameThread!!)
+            //The default layout is portrait
+            setContentView(R.layout.activity_main)
+        }
+    }*/
+
+    private fun attachToLocalGameServer() {
+        // First check to see if the link to the local GameServer is already stored in the ViewModel
+//        var viewModel: ActivityViewModel
+        var viewModelFactory: ActivityViewModelFactory = ActivityViewModelFactory()
+        var viewModel = ViewModelProvider(this, viewModelFactory).get(ActivityViewModel::class.java)
+        localGameServer = viewModel.getGameServer()
+
+        if (localGameServer != null) {
+            Log.d(TAG, "Reattached to the local GameServer.")
+        } else {
+            Log.d(TAG, "Starting a new local GameServer ...")
+            localGameServer = GameServer(applicationContext, getPreferences(MODE_PRIVATE))
+            localGameServer?.start()
+            viewModel.setGameServer(localGameServer!!)  // Store the link in the local ViewModel
         }
     }
 
     private fun stopGameServer() {
         Log.d(TAG, "Stopping the game server ...")
-        gameThread?.shutdown()
+        localGameServer?.shutdown()
     }
 
     /*
@@ -170,7 +177,7 @@ class MainActivity : AppCompatActivity() {
             Log.d(TAG, "The user did NOT click a grid square.")
             return
         }
-        gameThread?.queueClientRequest("s:$gridIndex")
+        localGameServer?.queueClientRequest("s:$gridIndex")
     }
 
     private fun displayCurrPlayer(player: String) {
@@ -185,7 +192,7 @@ class MainActivity : AppCompatActivity() {
         builder.setTitle(getString(R.string.new_game_title_message))
         builder.setMessage(getString(R.string.new_game_confirm_message))
         builder.setPositiveButton(getString(R.string.new_button_message)) { _, _ ->
-            gameThread?.queueClientRequest("reset:")
+            localGameServer?.queueClientRequest("reset:")
         }
         builder.setNegativeButton(getString(R.string.go_back_message)) { _, _ -> }
         builder.show()
@@ -255,10 +262,11 @@ class MainActivity : AppCompatActivity() {
         unregisterReceiver(gameMessageReceiver)
     }
 
-    companion object {
-        private val TAG = MainActivity::class.java.simpleName
-    }
+    private var colorOfReset: Int? = null
 
+    /**
+        The ViewModel and its Factory ensures that we recover a link to the GameServer after screen rotation.
+    */
     class ActivityViewModel(): ViewModel() {
 
         private var gameServer: GameServer? = null
@@ -280,4 +288,9 @@ class MainActivity : AppCompatActivity() {
             throw IllegalArgumentException("Unknown View Model Class")
         }
     }
+
+    companion object {
+        private val TAG = MainActivity::class.java.simpleName
+    }
+
 }

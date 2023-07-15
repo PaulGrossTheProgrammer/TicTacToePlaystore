@@ -21,17 +21,24 @@ class SocketClient(private val server: String, private val port: Int): Thread() 
         output = PrintWriter(clientSocket.getOutputStream());
         input = BufferedReader(InputStreamReader(clientSocket.getInputStream()));
 
-        var requestNumber = 0
         while (working.get()) {
-            requestNumber ++
             Log.i(TAG, "About to send status request ...")
             output.println("status:")
             output.flush()
             Log.i(TAG, "Sent status request...")
+            // Maybe swallow status requests if there is still no response from the last request.
+            // To avoid making the remote server to busy.
+            // But after a while give up waito]ing, and ask for a new status request???
+            // This way requests are responses are not matched, but that shouldn't matter
+            // if each response contains an update from the server.
+            // Perhaps the game server shouldn't specifically request status, but leave it to this Thread???
 
             Log.i(TAG, "About to get server response ...")
             var response = input.readLine()
             Log.i(TAG, "Server response [$response]")
+            // TODO - design for long responses that are split across multiple lines by the server.
+            // This is to avoid overrunning the TCPIP buffer.
+            // In this case, loop multiple readLine() calls here to assemble the entire response.
 
             sleep(5000L)  // Pause for a short time...
         }

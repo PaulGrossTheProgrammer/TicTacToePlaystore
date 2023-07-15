@@ -75,18 +75,20 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         val n = cm.activeNetwork
         val lp = cm.getLinkProperties(n)
         val addrs = lp?.linkAddresses
-        var thisIpAddress: String? = null
+//        var thisIpAddress: String? = null
+        val allIpAddresses: MutableList<String> = mutableListOf()
         Log.d(TAG, "IP Address List:")
         addrs?.forEach { addr ->
             val currIpAddress = addr.address.hostAddress
             Log.d(TAG, "IP Address: $currIpAddress")
-            if (currIpAddress.contains('.')) {
-                Log.d(TAG, "IP Address valid format")
-                thisIpAddress = currIpAddress
-            }
+//            if (currIpAddress.contains('.')) {
+//            }
+            Log.d(TAG, "IP Address valid format")
+            val thisIpAddress = currIpAddress
+            allIpAddresses.add(thisIpAddress)
         }
-        Log.d(TAG, "Chosen IP Address: $thisIpAddress")
-        messageUIDisplayIpAddress(thisIpAddress!!)
+        Log.d(TAG, "IP Address List: $allIpAddresses")
+        messageUIDisplayIpAddress(allIpAddresses)
 
         restoreGameState()
         messageUIDisplayGrid()
@@ -120,18 +122,18 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
             if (gameMode == GameMode.CLIENT) {
                 if (requestString != null) {
+                    // Note that the client is going to periodically request status.
+                    // So only UI actions need to be sent.
                     handleClientRequest(requestString)
                 }
 
-                // TODO: Periodically send a non-blocking call to the SocketClient to ask for 'status:'
-
-                // TODO: Poll for any response on the SocketClient responseQ, and display the result.
+                // TODO - define and listen to the remote server response queue.
+                // TODO - as the status comes in from the remote server queue, display that:
 //                messageUIDisplayGrid()
             }
 
-            // Adjust this period based on context. Fast for server, slower for client.
-            sleep(100L)  // Pause for a short time...
 
+            // FIXME: Allow user to switch between client and server.
             if (tempClientTestRun) {
                 tempClientTestRun = false
                 try {
@@ -141,6 +143,10 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
                     e.printStackTrace()
                 }
             }
+
+            // Adjust this period based on context. Fast for server, slower for client.
+            // Slower for pause mode.
+            sleep(100L)  // Pause for a short time...
         }
         Log.d(TAG, "The Game Server has shut down.")
     }
@@ -260,11 +266,18 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         context.sendBroadcast(intent)
     }
 
-    private fun messageUIDisplayIpAddress(addr: String) {
-        Log.d(TAG, "About to send IP Address: $addr to display ...")
+    private fun messageUIDisplayIpAddress(addrList: List<String>) {
+        var listAsString = ""
+        addrList.forEach { addr ->
+            if (!listAsString.isEmpty()) {
+                listAsString += " ,"
+            }
+            listAsString += addr
+        }
+        Log.d(TAG, "About to send IP Address List: [$listAsString] ...")
         val intent = Intent()
         intent.action = context.packageName + "display.UPDATE"
-        intent.putExtra("ipaddress", addr)
+        intent.putExtra("ipaddress", listAsString)
         context.sendBroadcast(intent)
     }
     private fun messageUIDisplayGrid() {
