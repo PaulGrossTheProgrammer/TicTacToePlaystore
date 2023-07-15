@@ -85,6 +85,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             allIpAddresses.add(thisIpAddress)
         }
         Log.d(TAG, "IP Address List: $allIpAddresses")
+        // TODO: Move this to update code
         messageUIDisplayIpAddress(allIpAddresses)
 
         restoreGameState()
@@ -111,9 +112,10 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
                     if (responseQ == null) {
                         // Local requests don't have a response Queue.
                         handleLocalRequest(requestString)
+                    } else {
+                        handleServerRequest(requestString, responseQ)
                     }
 
-                    handleServerRequest(requestString, responseQ)
                 }
             }
 
@@ -160,6 +162,13 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             resetGame()
             messageUIResetDisplay()
             messageUIDisplayGrid()
+        }
+        if (requestString == "resume:") {
+            Log.d(TAG, "Handling LOCAL status ...")
+            // FIXME: This doesn't work!!!???
+            restoreGameState()
+            messageUIDisplayGrid()
+            updateWinDisplay()
         }
     }
 

@@ -49,20 +49,6 @@ class MainActivity : AppCompatActivity() {
         } else {
             setContentView(R.layout.activity_main_landscape)
         }
-        /*if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            setContentView(R.layout.activity_main_landscape)
-        } else {
-            //The default layout is portrait
-            setContentView(R.layout.activity_main)
-        }*/
-/*        viewModelFactory = ActivityViewModelFactory()
-        viewModel = ViewModelProvider(this, viewModelFactory).get(ActivityViewModel::class.java)
-        if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            setContentView(R.layout.activity_main_landscape)
-        } else {
-            //The default layout is portrait
-            setContentView(R.layout.activity_main)
-        }*/
 
         // Add all the display squares into the list.
         // NOTE: The squares MUST BE added in index order.
@@ -90,20 +76,8 @@ class MainActivity : AppCompatActivity() {
         // TODO - ask the game server to pause until activity awakes again...
     }
 
-/*    private fun reAttachToGameServer() {
-        viewModelFactory = ActivityViewModelFactory()
-        viewModel = ViewModelProvider(this, viewModelFactory).get(ActivityViewModel::class.java)
-        if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            setContentView(R.layout.activity_main_landscape)
-        } else {
-            //The default layout is portrait
-            setContentView(R.layout.activity_main)
-        }
-    }*/
-
     private fun attachToLocalGameServer() {
         // First check to see if the link to the local GameServer is already stored in the ViewModel
-//        var viewModel: ActivityViewModel
         var viewModelFactory: ActivityViewModelFactory = ActivityViewModelFactory()
         var viewModel = ViewModelProvider(this, viewModelFactory).get(ActivityViewModel::class.java)
         localGameServer = viewModel.getGameServer()
@@ -111,7 +85,7 @@ class MainActivity : AppCompatActivity() {
         if (localGameServer != null) {
             Log.d(TAG, "Reattached to the local GameServer.")
             // FIXME - this doesn't work to update the display!!!???
-            localGameServer?.queueClientRequest("update:")
+            localGameServer?.queueClientRequest("resume:")
         } else {
             Log.d(TAG, "Starting a new local GameServer ...")
             localGameServer = GameServer(applicationContext, getPreferences(MODE_PRIVATE))
