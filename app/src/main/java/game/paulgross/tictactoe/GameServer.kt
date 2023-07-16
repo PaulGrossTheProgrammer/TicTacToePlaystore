@@ -66,6 +66,8 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
     private val working = AtomicBoolean(true)
 
+    private val allIpAddresses: MutableList<String> = mutableListOf()
+
     override fun run() {
         socketServer = SocketServer(gameRequestQ)
         socketServer!!.start()
@@ -75,7 +77,6 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         val n = cm.activeNetwork
         val lp = cm.getLinkProperties(n)
         val addrs = lp?.linkAddresses
-        val allIpAddresses: MutableList<String> = mutableListOf()
         Log.d(TAG, "IP Address List:")
         addrs?.forEach { addr ->
             val currIpAddress = addr.address.hostAddress
@@ -85,15 +86,15 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             allIpAddresses.add(thisIpAddress)
         }
         Log.d(TAG, "IP Address List: $allIpAddresses")
-        // TODO: Move this to update code
-        messageUIDisplayIpAddress(allIpAddresses)
+
 
         restoreGameState()
         messageUIDisplayGrid()
         updateWinDisplay()
+        messageUIDisplayIpAddress(allIpAddresses)
 
         // TODO: Experimental client
-        var tempClientTestRun = true
+        var tempClientTestRun = false
 
         while (working.get()) {
             val request = gameRequestQ.poll()  // Non-blocking read for client requests.
@@ -165,10 +166,16 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         }
         if (requestString == "resume:") {
             Log.d(TAG, "Handling LOCAL status ...")
-            // FIXME: This doesn't work!!!???
             restoreGameState()
             messageUIDisplayGrid()
             updateWinDisplay()
+            messageUIDisplayIpAddress(allIpAddresses)
+        }
+        if (requestString.startsWith("s:", true)) {
+            val indexString = requestString[2].toString()
+            val gridIndex = Integer.valueOf(indexString)
+            playSquare(gridIndex)
+            messageUIDisplayGrid()
         }
     }
 
@@ -182,7 +189,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             val gridIndex = Integer.valueOf(indexString)
             playSquare(gridIndex)
 
-            responseQ?.add("g:${encodeGrid()}")  // Add curr player. On a new line???
+            responseQ?.add("g:${encodeGrid()}")  // TODO: Add curr player. On a new line???
             messageUIDisplayGrid()
         }
         if (requestString == "status:") {
@@ -238,7 +245,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
         // Save the grid state.
         for (i in 0..8) {
-            editor.putString("Grid$i", grid!![i].toString())
+            editor.putString("Grid$i", grid[i].toString())
         }
 
         editor.putString("CurrPlayer", currPlayer.toString())
@@ -267,7 +274,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
     private fun messageUIResetDisplay() {
         val intent = Intent()
-        intent.action = context.packageName + "display.UPDATE"
+        intent.action = context.packageName + MainActivity.DISPLAY_INTENT_SUFFIX
         intent.putExtra("reset", true)
         context.sendBroadcast(intent)
     }
@@ -282,13 +289,15 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         }
         Log.d(TAG, "About to send IP Address List: [$listAsString] ...")
         val intent = Intent()
-        intent.action = context.packageName + "display.UPDATE"
+        intent.action = context.packageName + MainActivity.DISPLAY_INTENT_SUFFIX
+//        intent.action = context.packageName + ".display.UPDATE"
         intent.putExtra("ipaddress", listAsString)
         context.sendBroadcast(intent)
     }
     private fun messageUIDisplayGrid() {
         val intent = Intent()
-        intent.action = context.packageName + "display.UPDATE"
+        intent.action = context.packageName + MainActivity.DISPLAY_INTENT_SUFFIX
+//        intent.action = context.packageName + ".display.UPDATE"
         val gs = encodeGrid()
         Log.d(TAG, "About to send grid: [$gs]")
         intent.putExtra("grid", encodeGrid())
@@ -298,7 +307,8 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
     private fun messageUIDisplayVictory(winSquares: List<Int>) {
         val intent = Intent()
-        intent.action = context.packageName + "display.UPDATE"
+//        intent.action = context.packageName + ".display.UPDATE"
+        intent.action = context.packageName + MainActivity.DISPLAY_INTENT_SUFFIX
         val squares = winSquares[0].toString() + winSquares[1].toString() + winSquares[2].toString()
         intent.putExtra("winsquares", squares)
         context.sendBroadcast(intent)
@@ -306,7 +316,8 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
     private fun messageUIDisplayWinner(winner: String) {
         val intent = Intent()
-        intent.action = context.packageName + "display.UPDATE"
+//        intent.action = context.packageName + ".display.UPDATE"
+        intent.action = context.packageName + MainActivity.DISPLAY_INTENT_SUFFIX
         intent.putExtra("winner", winner)
         context.sendBroadcast(intent)
     }

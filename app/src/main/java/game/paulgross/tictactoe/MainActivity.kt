@@ -18,13 +18,14 @@ import androidx.lifecycle.ViewModelProvider
 
 class MainActivity : AppCompatActivity() {
 
+
     private var localGameServer: GameServer? = null
 
     private var displaySquareList: MutableList<TextView?> = mutableListOf()
+    private var textPlayerView: TextView? = null
 
     private var colorOfWinning: Int? = null
-
-    private var textPlayerView: TextView? = null
+    private var colorOfReset: Int? = null
 
     override fun onPause() {
         disableMessagesFromGameServer()
@@ -77,31 +78,30 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun attachToLocalGameServer() {
-        // First check to see if the link to the local GameServer is already stored in the ViewModel
-        var viewModelFactory: ActivityViewModelFactory = ActivityViewModelFactory()
-        var viewModel = ViewModelProvider(this, viewModelFactory).get(ActivityViewModel::class.java)
+        // Check to see if the link to the local GameServer is already stored in the ViewModel
+        var viewModel = ViewModelProvider(this, ActivityViewModelFactory()).get(ActivityViewModel::class.java)
         localGameServer = viewModel.getGameServer()
 
-        if (localGameServer != null) {
-            Log.d(TAG, "Reattached to the local GameServer.")
-            // FIXME - this doesn't work to update the display!!!???
-            localGameServer?.queueClientRequest("resume:")
-        } else {
+        if (localGameServer == null) {
             Log.d(TAG, "Starting a new local GameServer ...")
             localGameServer = GameServer(applicationContext, getPreferences(MODE_PRIVATE))
             localGameServer?.start()
-            viewModel.setGameServer(localGameServer!!)  // Store the link in the local ViewModel
+            viewModel.setGameServer(localGameServer!!)  // Store the link to the local GameServer
+        } else {
+            Log.d(TAG, "Reattached to the existing local GameServer.")
+            localGameServer?.queueClientRequest("resume:")
         }
     }
 
     private fun stopGameServer() {
         Log.d(TAG, "Stopping the game server ...")
         localGameServer?.shutdown()
-    }
 
-    /*
-        User Interface functions start here.
-     */
+        // TODO - is clearing the ViewModel still required???
+        // Probably cleaner to clear it ...?
+        var viewModel = ViewModelProvider(this, ActivityViewModelFactory()).get(ActivityViewModel::class.java)
+        viewModel.clearGameServer()
+    }
 
     /**
      * Updates the current grid state into the display squares.
@@ -188,6 +188,16 @@ class MainActivity : AppCompatActivity() {
         builder.show()
     }
 
+    private fun enableMessagesFromGameServer() {
+        val intentFilter = IntentFilter()
+        intentFilter.addAction(packageName + DISPLAY_INTENT_SUFFIX)
+        registerReceiver(gameMessageReceiver, intentFilter)
+    }
+
+    private fun disableMessagesFromGameServer() {
+        unregisterReceiver(gameMessageReceiver)
+    }
+
     /**
         Receive messages from the GameServer.
      */
@@ -228,18 +238,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun enableMessagesFromGameServer() {
-        val intentFilter = IntentFilter()
-        intentFilter.addAction(packageName + "display.UPDATE")
-        registerReceiver(gameMessageReceiver, intentFilter)
-    }
-
-    private fun disableMessagesFromGameServer() {
-        unregisterReceiver(gameMessageReceiver)
-    }
-
-    private var colorOfReset: Int? = null
-
     /**
         The ViewModel and its Factory ensures that we recover a link to the GameServer after screen rotation.
     */
@@ -252,6 +250,10 @@ class MainActivity : AppCompatActivity() {
 
         fun setGameServer(theServer: GameServer) {
             gameServer = theServer
+        }
+
+        fun clearGameServer() {
+            gameServer = null
         }
     }
 
@@ -267,6 +269,7 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private val TAG = MainActivity::class.java.simpleName
+        val DISPLAY_INTENT_SUFFIX = ".display.UPDATE"
     }
 
 }
