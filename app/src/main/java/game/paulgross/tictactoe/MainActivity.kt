@@ -174,6 +174,17 @@ class MainActivity : AppCompatActivity() {
         builder.show()
     }
 
+    fun onClickRemoteConnect(view: View) {
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle(getString(R.string.new_game_title_message))
+        builder.setMessage(getString(R.string.new_game_confirm_message))
+        builder.setPositiveButton(getString(R.string.new_button_message)) { _, _ ->
+            localGameServer?.queueClientRequest("reset:")
+        }
+        builder.setNegativeButton(getString(R.string.go_back_message)) { _, _ -> }
+        builder.show()
+    }
+
     fun onClickExitApp(view: View) {
         // Ask user to confirm exit
         // FIXME: The buttons on the AlertDialog have different colours to the layout.
