@@ -13,7 +13,6 @@ class SocketClient(private val server: String, private val port: Int): Thread() 
     private val working = AtomicBoolean(true)
 
     lateinit var output: PrintWriter
-//    lateinit var input: DataInputStream
     lateinit var input: BufferedReader
 
     override fun run() {
@@ -42,6 +41,10 @@ class SocketClient(private val server: String, private val port: Int): Thread() 
 
             sleep(5000L)  // Pause for a short time...
         }
+    }
+
+    fun shutdown() {
+        // TODO
     }
 
     companion object {

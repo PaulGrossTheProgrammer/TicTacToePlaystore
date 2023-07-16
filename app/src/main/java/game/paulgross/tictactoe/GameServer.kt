@@ -17,6 +17,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
 
     private var socketServer: SocketServer? = null
+    private var socketClient: SocketClient? = null
 
     private val gameRequestQ: BlockingQueue<ClientRequest> = LinkedBlockingQueue()
     private val context: Context
@@ -160,23 +161,47 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
     private fun switchToRemoteServerMode(address: String) {
         Log.d(TAG, "TODO: Switch to Remote Server Mode: $address")
-        // TODO - stop SocketServer
+        if (socketServer != null) {
+            socketServer?.shutdown()
+        }
 
         // TODO - start SocketClient
+        try {
+            val socketClient = SocketClient("192.168.1.112", SocketServer.PORT)
+            socketClient.start()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        // Wait for success in both shutdown and startup
+        gameMode = GameMode.CLIENT
     }
 
     private fun switchToLocalServerMode() {
         Log.d(TAG, "TODO: Switch to Local Server Mode.")
-        // TODO - stop SocketClient
+        if (socketClient != null) {
+            socketClient?.shutdown()
+        }
 
         // TODO - start up SocketServer
+        socketServer = SocketServer(gameRequestQ)
+
+        // Wait for success in both shutdown and startup
+        gameMode = GameMode.SERVER
     }
 
     private fun switchToPureLocalMode() {
         Log.d(TAG, "TODO: Switch to Local Server Mode.")
-        // TODO - stop SocketClient
+        if (socketServer != null) {
+            socketServer?.shutdown()
+        }
 
-        // TODO - stop SocketClient
+        if (socketClient != null) {
+            socketClient?.shutdown()
+        }
+
+        // Wait for success in shutdown
+        gameMode = GameMode.LOCAL
     }
 
     private fun handleClientRequest(requestString: String) {
