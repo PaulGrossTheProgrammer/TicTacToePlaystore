@@ -87,7 +87,6 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         }
         Log.d(TAG, "IP Address List: $allIpAddresses")
 
-
         restoreGameState()
         messageUIDisplayGrid()
         updateWinDisplay()
@@ -104,7 +103,11 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             if (request != null) {
                 requestString = request.requestString
                 responseQ = request.responseQ
+                if (requestString.startsWith("RemoteServer:")) {
+                    Log.d(TAG, "TODO: Switch to remote mode [$requestString]")
+                }
             }
+
             if (gameMode == GameMode.SERVER || gameMode == GameMode.LOCAL) {
                 // TODO - clear at least a few client requests if there are many queued up.
                 if (requestString != null) {
@@ -149,6 +152,31 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             sleep(100L)  // Pause for a short time...
         }
         Log.d(TAG, "The Game Server has shut down.")
+    }
+
+    private fun getGameMode(): GameMode {
+        return gameMode
+    }
+
+    private fun switchToRemoteServerMode(address: String) {
+        Log.d(TAG, "TODO: Switch to Remote Server Mode: $address")
+        // TODO - stop SocketServer
+
+        // TODO - start SocketClient
+    }
+
+    private fun switchToLocalServerMode() {
+        Log.d(TAG, "TODO: Switch to Local Server Mode.")
+        // TODO - stop SocketClient
+
+        // TODO - start up SocketServer
+    }
+
+    private fun switchToPureLocalMode() {
+        Log.d(TAG, "TODO: Switch to Local Server Mode.")
+        // TODO - stop SocketClient
+
+        // TODO - stop SocketClient
     }
 
     private fun handleClientRequest(requestString: String) {

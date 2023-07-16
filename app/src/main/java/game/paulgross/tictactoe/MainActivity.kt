@@ -176,19 +176,28 @@ class MainActivity : AppCompatActivity() {
         builder.show()
     }
 
-    fun onClickRemoteConnect(view: View) {
+    fun onClickJoinRemote(view: View) {
         val builder = AlertDialog.Builder(this)
-        builder.setTitle(getString(R.string.new_game_title_message))
-        builder.setMessage(getString(R.string.new_game_confirm_message))
+        builder.setTitle("Remote Connect")
+        builder.setMessage("Enter Remote Address")
 
         // TODO: User input of remote IP address
         val input = EditText(this)
         // Specify the type of input expected; this, for example, sets the input as a password, and will mask the text
         input.inputType = InputType.TYPE_CLASS_TEXT
+        val preferences = getPreferences(MODE_PRIVATE)
+        // TODO - get default from GameServer
+        val prevServer = preferences.getString("RemoteServer", "192.168.1.").toString()
+        input.setText(prevServer)
         builder.setView(input)
 
-        builder.setPositiveButton(getString(R.string.new_button_message)) { _, _ ->
-            localGameServer?.queueClientRequest("reset:")
+        builder.setPositiveButton("Join") { _, _ ->
+            val remoteIP = input.text.toString()
+            val editor = preferences.edit()
+            editor.putString("RemoteServer", remoteIP)
+            editor.apply()
+            Log.d(TAG, "TODO Connect to $remoteIP")
+            localGameServer?.queueClientRequest("RemoteServer:$remoteIP")
         }
         builder.setNegativeButton(getString(R.string.go_back_message)) { _, _ -> }
         builder.show()
