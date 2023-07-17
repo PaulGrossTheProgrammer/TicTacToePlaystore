@@ -181,9 +181,67 @@ class MainActivity : AppCompatActivity() {
     class myCursor: MatrixCursor(arrayOf<String>("Mode")) {
 
     }
-
     fun onClickManageMode(view: View) {
+        if (localGameServer?.getGameMode() == GameServer.GameMode.LOCAL) {
             val builder = AlertDialog.Builder(this)
+            builder.setTitle("Mode")
+            builder.setMessage("Current Mode: LOCAL")
+
+            builder.setPositiveButton("START SERVER") { _, _ ->
+                localGameServer?.switchToLocalServerMode()
+            }
+            builder.setNegativeButton(getString(R.string.go_back_message)) { _, _ -> }
+
+/*            builder.setMessage("Enter Remote Address")
+            // TODO: User input of remote IP address
+            val input = EditText(this)
+            // Specify the type of input expected; this, for example, sets the input as a password, and will mask the text
+            input.inputType = InputType.TYPE_CLASS_TEXT
+            val preferences = getPreferences(MODE_PRIVATE)
+            // TODO - get default from GameServer
+            val prevServer = preferences.getString("RemoteServer", "192.168.1.").toString()
+            input.setText(prevServer)
+            builder.setView(input)
+
+            builder.setPositiveButton("Join Remote Server") { _, _ ->
+                val remoteIP = input.text.toString()
+                val editor = preferences.edit()
+                editor.putString("RemoteServer", remoteIP)
+                editor.apply()
+                Log.d(TAG, "TODO Connect to $remoteIP")
+                localGameServer?.queueClientRequest("RemoteServer:$remoteIP")
+            }*/
+
+            builder.show()
+        } else if (localGameServer?.getGameMode() == GameServer.GameMode.SERVER) {
+            val builder = AlertDialog.Builder(this)
+            builder.setTitle("Mode")
+            builder.setMessage("Current Mode: SERVER")
+
+            builder.setPositiveButton("LOCAL") { _, _ ->
+                localGameServer?.switchToPureLocalMode()
+            }
+
+            builder.setNegativeButton(getString(R.string.go_back_message)) { _, _ -> }
+            builder.show()
+        } else if (localGameServer?.getGameMode() == GameServer.GameMode.CLIENT) {
+            val builder = AlertDialog.Builder(this)
+            builder.setTitle("Mode")
+            builder.setMessage("Current Mode: CLIENT")
+
+            builder.setPositiveButton("LOCAL") { _, _ ->
+                localGameServer?.switchToPureLocalMode()
+            }
+
+            builder.setNegativeButton(getString(R.string.go_back_message)) { _, _ -> }
+            builder.show()
+        }
+
+    }
+
+
+    fun onClickManageMode_old(view: View) {
+        val builder = AlertDialog.Builder(this)
         builder.setTitle("Mode")
         builder.setMessage("Current Mode: TODO")
         val items: List<GameServer.GameMode> = listOf(GameServer.GameMode.SERVER,GameServer.GameMode.CLIENT,GameServer.GameMode.LOCAL)
@@ -194,23 +252,9 @@ class MainActivity : AppCompatActivity() {
         cursor.addRow(arrayOf(1, "SERVER"))
         cursor.addRow(arrayOf(2, "LOCAL"))
 
-
-//        cursor.RowBuilder.add("")
-
-/*        val cursor = MatrixCursor(arrayOf("Mode"))
-        var i = 0
-        for (s in suggestions) {
-            val temp = arrayOfNulls<String>(2)
-            temp[0] = Integer.toString(i)
-            temp[1] = s
-            i++
-            cursor.addRow(temp)
-        }*/
-
-//        var cursor: Cursor = {}  // FIXME: How do I create this cursor????
         var checkedItemIndex = 1
         builder.setSingleChoiceItems(cursor, checkedItemIndex, "Mode") {
-                dialog_, which ->
+                _, which ->
                 checkedItemIndex = which
                 checkedItem = items[which]
             }

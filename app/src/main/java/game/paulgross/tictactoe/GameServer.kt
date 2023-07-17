@@ -15,7 +15,6 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 class GameServer(applicationContext: Context, sharedPreferences: SharedPreferences) : Thread() {
 
-
     private var socketServer: SocketServer? = null
     private var socketClient: SocketClient? = null
 
@@ -38,7 +37,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         /** Connect to a network GameServer. */
         CLIENT
     }
-    private var gameMode: GameMode = GameMode.SERVER
+    private var gameMode: GameMode = GameMode.LOCAL
 
     enum class SquareState {
         /** Empty square */
@@ -70,8 +69,6 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
     private val allIpAddresses: MutableList<String> = mutableListOf()
 
     override fun run() {
-        socketServer = SocketServer(gameRequestQ)
-        socketServer!!.start()
 
         // TODO: Experimenting with getting the IP address
         val cm: ConnectivityManager = context.getSystemService(ConnectivityManager::class.java)
@@ -155,11 +152,11 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         Log.d(TAG, "The Game Server has shut down.")
     }
 
-    private fun getGameMode(): GameMode {
+    fun getGameMode(): GameMode {
         return gameMode
     }
 
-    private fun switchToRemoteServerMode(address: String) {
+    fun switchToRemoteServerMode(address: String) {
         Log.d(TAG, "TODO: Switch to Remote Server Mode: $address")
         if (socketServer != null) {
             socketServer?.shutdown()
@@ -177,7 +174,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         gameMode = GameMode.CLIENT
     }
 
-    private fun switchToLocalServerMode() {
+    fun switchToLocalServerMode() {
         Log.d(TAG, "TODO: Switch to Local Server Mode.")
         if (socketClient != null) {
             socketClient?.shutdown()
@@ -185,12 +182,14 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
         // TODO - start up SocketServer
         socketServer = SocketServer(gameRequestQ)
+        socketServer!!.start()
 
-        // Wait for success in both shutdown and startup
+        // FIXME - don't WAIT here - it will hold the main thread.
+        // Instead, queue a request to change mode to enable main thread to proceed.
         gameMode = GameMode.SERVER
     }
 
-    private fun switchToPureLocalMode() {
+    fun switchToPureLocalMode() {
         Log.d(TAG, "TODO: Switch to Local Server Mode.")
         if (socketServer != null) {
             socketServer?.shutdown()
@@ -200,7 +199,8 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             socketClient?.shutdown()
         }
 
-        // Wait for success in shutdown
+        // FIXME - don't WAIT here - it will hold the main thread.
+        // Instead, queue a request to change mode to enable main thread to proceed.
         gameMode = GameMode.LOCAL
     }
 
