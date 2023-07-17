@@ -6,7 +6,7 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.res.Configuration
-import android.database.Cursor
+import android.database.MatrixCursor
 import android.os.Bundle
 import android.text.InputType
 import android.util.Log
@@ -178,22 +178,42 @@ class MainActivity : AppCompatActivity() {
         builder.show()
     }
 
+    class myCursor: MatrixCursor(arrayOf<String>("Mode")) {
+
+    }
+
     fun onClickManageMode(view: View) {
             val builder = AlertDialog.Builder(this)
         builder.setTitle("Mode")
         builder.setMessage("Current Mode: TODO")
-        val items: MutableList<GameServer.GameMode> = mutableListOf(GameServer.GameMode.SERVER,GameServer.GameMode.CLIENT,GameServer.GameMode.LOCAL)
+        val items: List<GameServer.GameMode> = listOf(GameServer.GameMode.SERVER,GameServer.GameMode.CLIENT,GameServer.GameMode.LOCAL)
         var checkedItem = items[0]  // FIXME - get current mode
-/*
-        var cursor: Cursor = {}  // FIXME: How do I create this cursor????
+
+        var cursor: MatrixCursor = MatrixCursor(arrayOf("_id", "Mode"))
+        cursor.addRow(arrayOf(0, "CLIENT"))
+        cursor.addRow(arrayOf(1, "SERVER"))
+        cursor.addRow(arrayOf(2, "LOCAL"))
+
+
+//        cursor.RowBuilder.add("")
+
+/*        val cursor = MatrixCursor(arrayOf("Mode"))
+        var i = 0
+        for (s in suggestions) {
+            val temp = arrayOfNulls<String>(2)
+            temp[0] = Integer.toString(i)
+            temp[1] = s
+            i++
+            cursor.addRow(temp)
+        }*/
+
+//        var cursor: Cursor = {}  // FIXME: How do I create this cursor????
         var checkedItemIndex = 1
-        builder.setSingleChoiceItems(cursor, checkedItemIndex, "Mode", DialogInterface.OnClickListener()
-            { dialog_, which ->
+        builder.setSingleChoiceItems(cursor, checkedItemIndex, "Mode") {
+                dialog_, which ->
                 checkedItemIndex = which
                 checkedItem = items[which]
             }
-        )
-*/
 
         builder.setNegativeButton(getString(R.string.go_back_message)) { _, _ -> }
         builder.show()
