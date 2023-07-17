@@ -2,9 +2,11 @@ package game.paulgross.tictactoe
 
 import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.DialogInterface
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.res.Configuration
+import android.database.Cursor
 import android.os.Bundle
 import android.text.InputType
 import android.util.Log
@@ -172,6 +174,27 @@ class MainActivity : AppCompatActivity() {
         builder.setPositiveButton(getString(R.string.new_button_message)) { _, _ ->
             localGameServer?.queueClientRequest("reset:")
         }
+        builder.setNegativeButton(getString(R.string.go_back_message)) { _, _ -> }
+        builder.show()
+    }
+
+    fun onClickManageMode(view: View) {
+            val builder = AlertDialog.Builder(this)
+        builder.setTitle("Mode")
+        builder.setMessage("Current Mode: TODO")
+        val items: MutableList<GameServer.GameMode> = mutableListOf(GameServer.GameMode.SERVER,GameServer.GameMode.CLIENT,GameServer.GameMode.LOCAL)
+        var checkedItem = items[0]  // FIXME - get current mode
+/*
+        var cursor: Cursor = {}  // FIXME: How do I create this cursor????
+        var checkedItemIndex = 1
+        builder.setSingleChoiceItems(cursor, checkedItemIndex, "Mode", DialogInterface.OnClickListener()
+            { dialog_, which ->
+                checkedItemIndex = which
+                checkedItem = items[which]
+            }
+        )
+*/
+
         builder.setNegativeButton(getString(R.string.go_back_message)) { _, _ -> }
         builder.show()
     }
