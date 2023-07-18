@@ -2,7 +2,6 @@ package game.paulgross.tictactoe
 
 import android.content.BroadcastReceiver
 import android.content.Context
-import android.content.DialogInterface
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.res.Configuration
@@ -16,7 +15,6 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 
 
@@ -73,28 +71,13 @@ class MainActivity : AppCompatActivity() {
         textPlayerView = findViewById(R.id.textPlayer)
 
         enableMessagesFromGameServer()
-        attachToLocalGameServer()
+
+        localGameServer = ActivityViewModelFactory.attachToLocalGameServer(this, applicationContext, getPreferences(MODE_PRIVATE))
     }
 
     override fun onStop() {
         super.onStop()
         // TODO - ask the game server to pause until activity awakes again...
-    }
-
-    private fun attachToLocalGameServer() {
-        // Check to see if the link to the local GameServer is already stored in the ViewModel
-        var viewModel = ViewModelProvider(this, ActivityViewModelFactory()).get(ActivityViewModel::class.java)
-        localGameServer = viewModel.getGameServer()
-
-        if (localGameServer == null) {
-            Log.d(TAG, "Starting a new local GameServer ...")
-            localGameServer = GameServer(applicationContext, getPreferences(MODE_PRIVATE))
-            localGameServer?.start()
-            viewModel.setGameServer(localGameServer!!)  // Store the link to the local GameServer
-        } else {
-            Log.d(TAG, "Reattached to the existing local GameServer.")
-            localGameServer?.queueClientRequest("resume:")
-        }
     }
 
     private fun stopGameServer() {
@@ -104,7 +87,7 @@ class MainActivity : AppCompatActivity() {
         // TODO - is clearing the ViewModel still required???
         // Probably cleaner to clear it ...?
         var viewModel = ViewModelProvider(this, ActivityViewModelFactory()).get(ActivityViewModel::class.java)
-        viewModel.clearGameServer()
+        viewModel.clearGameServerPointer()
     }
 
     /**
@@ -178,70 +161,33 @@ class MainActivity : AppCompatActivity() {
         builder.show()
     }
 
+    /**
+     * How to change to a different activity
+     *
+     * https://stackoverflow.com/questions/24946098/how-to-change-the-content-view-with-a-button-using-setcontent
+     *
+     *
+     For the FirstActivity, you can run this off a button's onClick() handler:
+    Intent intent = new Intent(FirstActivity.this, SecondActivity.class);
+    intent.putExtra("Text","Some Text Data");  // Optional data passing to SecondActivity
+    startActivity(intent);
+
+     Note on optional data passing - how to get the Intent data: use onCreate() like this:
+    protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.activity_second);
+
+    text = getIntent().getExtras().getString("Text");
+     */
+
+
+
     class myCursor: MatrixCursor(arrayOf<String>("Mode")) {
 
     }
+
     fun onClickManageMode(view: View) {
-        if (localGameServer?.getGameMode() == GameServer.GameMode.LOCAL) {
             val builder = AlertDialog.Builder(this)
-            builder.setTitle("Mode")
-            builder.setMessage("Current Mode: LOCAL")
-
-            builder.setPositiveButton("START SERVER") { _, _ ->
-                localGameServer?.switchToLocalServerMode()
-            }
-            builder.setNegativeButton(getString(R.string.go_back_message)) { _, _ -> }
-
-/*            builder.setMessage("Enter Remote Address")
-            // TODO: User input of remote IP address
-            val input = EditText(this)
-            // Specify the type of input expected; this, for example, sets the input as a password, and will mask the text
-            input.inputType = InputType.TYPE_CLASS_TEXT
-            val preferences = getPreferences(MODE_PRIVATE)
-            // TODO - get default from GameServer
-            val prevServer = preferences.getString("RemoteServer", "192.168.1.").toString()
-            input.setText(prevServer)
-            builder.setView(input)
-
-            builder.setPositiveButton("Join Remote Server") { _, _ ->
-                val remoteIP = input.text.toString()
-                val editor = preferences.edit()
-                editor.putString("RemoteServer", remoteIP)
-                editor.apply()
-                Log.d(TAG, "TODO Connect to $remoteIP")
-                localGameServer?.queueClientRequest("RemoteServer:$remoteIP")
-            }*/
-
-            builder.show()
-        } else if (localGameServer?.getGameMode() == GameServer.GameMode.SERVER) {
-            val builder = AlertDialog.Builder(this)
-            builder.setTitle("Mode")
-            builder.setMessage("Current Mode: SERVER")
-
-            builder.setPositiveButton("LOCAL") { _, _ ->
-                localGameServer?.switchToPureLocalMode()
-            }
-
-            builder.setNegativeButton(getString(R.string.go_back_message)) { _, _ -> }
-            builder.show()
-        } else if (localGameServer?.getGameMode() == GameServer.GameMode.CLIENT) {
-            val builder = AlertDialog.Builder(this)
-            builder.setTitle("Mode")
-            builder.setMessage("Current Mode: CLIENT")
-
-            builder.setPositiveButton("LOCAL") { _, _ ->
-                localGameServer?.switchToPureLocalMode()
-            }
-
-            builder.setNegativeButton(getString(R.string.go_back_message)) { _, _ -> }
-            builder.show()
-        }
-
-    }
-
-
-    fun onClickManageMode_old(view: View) {
-        val builder = AlertDialog.Builder(this)
         builder.setTitle("Mode")
         builder.setMessage("Current Mode: TODO")
         val items: List<GameServer.GameMode> = listOf(GameServer.GameMode.SERVER,GameServer.GameMode.CLIENT,GameServer.GameMode.LOCAL)
@@ -252,9 +198,23 @@ class MainActivity : AppCompatActivity() {
         cursor.addRow(arrayOf(1, "SERVER"))
         cursor.addRow(arrayOf(2, "LOCAL"))
 
+
+//        cursor.RowBuilder.add("")
+
+/*        val cursor = MatrixCursor(arrayOf("Mode"))
+        var i = 0
+        for (s in suggestions) {
+            val temp = arrayOfNulls<String>(2)
+            temp[0] = Integer.toString(i)
+            temp[1] = s
+            i++
+            cursor.addRow(temp)
+        }*/
+
+//        var cursor: Cursor = {}  // FIXME: How do I create this cursor????
         var checkedItemIndex = 1
         builder.setSingleChoiceItems(cursor, checkedItemIndex, "Mode") {
-                _, which ->
+                dialog_, which ->
                 checkedItemIndex = which
                 checkedItem = items[which]
             }
@@ -357,23 +317,23 @@ class MainActivity : AppCompatActivity() {
     /**
         The ViewModel and its Factory ensures that we recover a link to the GameServer after screen rotation.
     */
-    class ActivityViewModel(): ViewModel() {
+/*    class ActivityViewModel(): ViewModel() {
 
         private var gameServer: GameServer? = null
-        fun getGameServer(): GameServer? {
+        fun retrieveGameServerPointer(): GameServer? {
             return gameServer
         }
 
-        fun setGameServer(theServer: GameServer) {
+        fun storeGameServerPointer(theServer: GameServer) {
             gameServer = theServer
         }
 
         fun clearGameServer() {
             gameServer = null
         }
-    }
+    }*/
 
-    class ActivityViewModelFactory(): ViewModelProvider.Factory {
+/*    class ActivityViewModelFactory(): ViewModelProvider.Factory {
 
         override  fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(ActivityViewModel::class.java)){
@@ -381,7 +341,7 @@ class MainActivity : AppCompatActivity() {
             }
             throw IllegalArgumentException("Unknown View Model Class")
         }
-    }
+    }*/
 
     companion object {
         private val TAG = MainActivity::class.java.simpleName
