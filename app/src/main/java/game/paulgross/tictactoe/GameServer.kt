@@ -1,5 +1,6 @@
 package game.paulgross.tictactoe
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -85,7 +86,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         restoreGameState()
         messageUIDisplayGrid()
         updateWinDisplay()
-        messageUIDisplayIpAddress(allIpAddresses)
+        messageUIDisplayIpAddress(allIpAddresses)  // Move this to Settings Activity
 
         // TODO: Experimental client
         var tempClientTestRun = false
@@ -282,7 +283,11 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
     fun shutdown() {
         Log.d(TAG, "The Game Server is shutting down ...")
         working.set(false)
-        socketServer?.shutdown()
+
+        socketServer?.shutdown()  // Only in SERVER mode.
+
+        // TODO - shut down client in CLIENT mode.
+
         singletonGameServer = null
     }
 
@@ -367,7 +372,6 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
     private fun messageUIDisplayWinner(winner: String) {
         val intent = Intent()
-//        intent.action = context.packageName + ".display.UPDATE"
         intent.action = context.packageName + MainActivity.DISPLAY_MESSAGE_SUFFIX
         intent.putExtra("winner", winner)
         context.sendBroadcast(intent)
@@ -462,6 +466,8 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
     companion object {
         private val TAG = GameServer::class.java.simpleName
 
+        // The GameServer always runs in it's own thread, and shutdown() must be called as the App closes.
+        @SuppressLint("StaticFieldLeak")
         private var singletonGameServer: GameServer? = null
 
         fun getSingleton(applicationContext: Context, sharedPreferences: SharedPreferences): GameServer? {

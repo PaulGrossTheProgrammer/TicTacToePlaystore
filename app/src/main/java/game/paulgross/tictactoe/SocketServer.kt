@@ -14,18 +14,18 @@ class SocketServer(private val gameRequestQ: BlockingQueue<GameServer.ClientRequ
     private val clientHandlers: MutableList<SocketClientHandler> = arrayListOf()
 
     override fun run() {
-        var socket: Socket? = null
+        var clientSocket: Socket? = null
         try {
             serverSocket = ServerSocket(PORT)
             Log.d(TAG, "Created ServerSocket for ${serverSocket.localSocketAddress}")
 
             while (working.get()) {
                 Log.i(TAG, "Waiting for new client sockets...")
-                socket = serverSocket.accept()
-                Log.i(TAG, "New client: $socket")
+                clientSocket = serverSocket.accept()
+                Log.i(TAG, "New client: $clientSocket")
 
                 // Create a new Thread for each client.
-                val t = SocketClientHandler(socket, gameRequestQ, this)
+                val t = SocketClientHandler(clientSocket, gameRequestQ, this)
                 t.start()
 
                 // This list allows us to remove each Handler if the client disconnects
@@ -39,7 +39,7 @@ class SocketServer(private val gameRequestQ: BlockingQueue<GameServer.ClientRequ
                 e.printStackTrace()
             }
             try {
-                socket?.close()
+                clientSocket?.close()
             } catch (ex: IOException) {
                 ex.printStackTrace()
             }

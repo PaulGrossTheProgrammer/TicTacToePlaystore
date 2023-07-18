@@ -15,7 +15,6 @@ import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity() {
 
-
     private var localGameServer: GameServer? = null
 
     private var displaySquareList: MutableList<TextView?> = mutableListOf()
@@ -76,9 +75,13 @@ class MainActivity : AppCompatActivity() {
         // TODO - ask the game server to pause until activity awakes again...
     }
 
+    public override fun onBackPressed() {
+        confirmExitApp()
+    }
+
     private fun stopGameServer() {
         Log.d(TAG, "Stopping the game server ...")
-        localGameServer?.shutdown()
+        localGameServer?.shutdown()  // Should I queue a request instead???
     }
 
     /**
@@ -153,6 +156,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun onClickSettings(view: View) {
+        // Switch to SettingsActivity
         val intent: Intent = Intent(this, SettingsActivity::class.java)
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
@@ -164,17 +168,24 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun onClickExitApp(view: View) {
-        // Ask user to confirm exit
+        confirmExitApp()
+    }
+
+    private fun confirmExitApp() {
         // FIXME: The buttons on the AlertDialog have different colours to the layout.
         val builder = AlertDialog.Builder(this)
         builder.setTitle(getString(R.string.exit_title_message))
         builder.setMessage(getString(R.string.exit_confirm_message))
         builder.setPositiveButton(getString(R.string.exit_message)) { _, _ ->
-            stopGameServer()
-            finishAndRemoveTask()
+            exitApp()
         }
         builder.setNegativeButton(getString(R.string.go_back_message)) { _, _ -> }
         builder.show()
+    }
+
+    private fun exitApp() {
+        stopGameServer()
+        finishAndRemoveTask()
     }
 
     private fun enableMessagesFromGameServer() {
@@ -232,5 +243,4 @@ class MainActivity : AppCompatActivity() {
         private val TAG = MainActivity::class.java.simpleName
         val DISPLAY_MESSAGE_SUFFIX = ".$TAG.display.UPDATE"
     }
-
 }
