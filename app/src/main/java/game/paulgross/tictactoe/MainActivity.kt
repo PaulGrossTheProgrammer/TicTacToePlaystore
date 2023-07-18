@@ -15,7 +15,6 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.ViewModelProvider
 
 class MainActivity : AppCompatActivity() {
 
@@ -71,7 +70,8 @@ class MainActivity : AppCompatActivity() {
 
         enableMessagesFromGameServer()
 
-        localGameServer = ActivityViewModelFactory.attachToLocalGameServer(this, applicationContext, getPreferences(MODE_PRIVATE))
+        localGameServer = GameServer.getSingleton(applicationContext, getPreferences(MODE_PRIVATE))
+        localGameServer?.queueClientRequest("resume:")
     }
 
     override fun onStop() {
@@ -82,11 +82,6 @@ class MainActivity : AppCompatActivity() {
     private fun stopGameServer() {
         Log.d(TAG, "Stopping the game server ...")
         localGameServer?.shutdown()
-
-        // TODO - is clearing the ViewModel still required???
-        // Probably cleaner to clear it ...?
-        var viewModel = ViewModelProvider(this, ActivityViewModelFactory()).get(ActivityViewModel::class.java)
-        viewModel.clearGameServerPointer()
     }
 
     /**
@@ -167,7 +162,7 @@ class MainActivity : AppCompatActivity() {
      *
      *
      For the FirstActivity, you can run this off a button's onClick() handler:
-    Intent intent = new Intent(FirstActivity.this, SecondActivity.class);
+    Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
     intent.putExtra("Text","Some Text Data");  // Optional data passing to SecondActivity
     startActivity(intent);
 
@@ -179,7 +174,13 @@ class MainActivity : AppCompatActivity() {
     text = getIntent().getExtras().getString("Text");
      */
 
-
+    fun onClickSettings(view: View) {
+        val intent: Intent = Intent(this, SettingsActivity::class.java)
+        // TODO: Determine if this is correct.
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        startActivity(intent)
+    }
 
     class myCursor: MatrixCursor(arrayOf<String>("Mode")) {
 
@@ -312,35 +313,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
-
-    /**
-        The ViewModel and its Factory ensures that we recover a link to the GameServer after screen rotation.
-    */
-/*    class ActivityViewModel(): ViewModel() {
-
-        private var gameServer: GameServer? = null
-        fun retrieveGameServerPointer(): GameServer? {
-            return gameServer
-        }
-
-        fun storeGameServerPointer(theServer: GameServer) {
-            gameServer = theServer
-        }
-
-        fun clearGameServer() {
-            gameServer = null
-        }
-    }*/
-
-/*    class ActivityViewModelFactory(): ViewModelProvider.Factory {
-
-        override  fun <T : ViewModel> create(modelClass: Class<T>): T {
-            if (modelClass.isAssignableFrom(ActivityViewModel::class.java)){
-                return ActivityViewModel() as T
-            }
-            throw IllegalArgumentException("Unknown View Model Class")
-        }
-    }*/
 
     companion object {
         private val TAG = MainActivity::class.java.simpleName

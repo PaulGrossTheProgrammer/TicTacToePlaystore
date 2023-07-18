@@ -5,7 +5,6 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.net.ConnectivityManager
 import android.util.Log
-import androidx.core.content.getSystemService
 import java.lang.Exception
 import java.net.InetAddress
 import java.util.Queue
@@ -59,8 +58,8 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         SquareState.E, SquareState.E, SquareState.E
     )
 
-    var currPlayer: SquareState = SquareState.X
-    var winner = SquareState.E
+    private var currPlayer: SquareState = SquareState.X
+    private var winner = SquareState.E
 
     data class ClientRequest(val requestString: String, val responseQ: Queue<String?>?)
 
@@ -69,8 +68,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
     private val allIpAddresses: MutableList<String> = mutableListOf()
 
     override fun run() {
-
-        // TODO: Experimenting with getting the IP address
+        // TODO: Move this IP Address code into function that listens to change of network state.
         val cm: ConnectivityManager = context.getSystemService(ConnectivityManager::class.java)
         val n = cm.activeNetwork
         val lp = cm.getLinkProperties(n)
@@ -286,6 +284,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         Log.d(TAG, "The Game Server is shutting down ...")
         working.set(false)
         socketServer?.shutdown()
+        singletonGameServer = null
     }
 
     /**
@@ -460,7 +459,21 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         return null
     }
 
+
     companion object {
         private val TAG = GameServer::class.java.simpleName
+
+        private var singletonGameServer: GameServer? = null
+
+        fun getSingleton(applicationContext: Context, sharedPreferences: SharedPreferences): GameServer? {
+            if (singletonGameServer == null) {
+                Log.d(TAG, "Starting new GameServer ...")
+                singletonGameServer = GameServer(applicationContext, sharedPreferences)
+                singletonGameServer!!.start()
+            } else {
+                Log.d(TAG, "Already created GameServer.")
+            }
+            return singletonGameServer
+        }
     }
 }

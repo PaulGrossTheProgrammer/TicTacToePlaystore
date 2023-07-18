@@ -7,14 +7,14 @@
     tools:context=".MainActivity">
 
     <Button
-        android:id="@+id/buttonChangeMode"
+        android:id="@+id/buttonSettings"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
         android:layout_marginBottom="8dp"
         android:backgroundTint="@color/orange_pastel"
-        android:onClick="onClickManageMode"
-        android:text="Mode"
+        android:onClick="onClickSettings"
+        android:text="Settings"
         android:textColor="@color/black"
         app:layout_constraintBottom_toTopOf="@+id/buttonNewGame"
         app:layout_constraintStart_toStartOf="parent" />
