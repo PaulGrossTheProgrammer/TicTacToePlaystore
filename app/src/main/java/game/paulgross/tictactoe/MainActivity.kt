@@ -5,12 +5,9 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.res.Configuration
-import android.database.MatrixCursor
 import android.os.Bundle
-import android.text.InputType
 import android.util.Log
 import android.view.View
-import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -155,99 +152,15 @@ class MainActivity : AppCompatActivity() {
         builder.show()
     }
 
-    /**
-     * How to change to a different activity
-     *
-     * https://stackoverflow.com/questions/24946098/how-to-change-the-content-view-with-a-button-using-setcontent
-     *
-     *
-     For the FirstActivity, you can run this off a button's onClick() handler:
-    Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
-    intent.putExtra("Text","Some Text Data");  // Optional data passing to SecondActivity
-    startActivity(intent);
-
-     Note on optional data passing - how to get the Intent data: use onCreate() like this:
-    protected void onCreate(Bundle savedInstanceState) {
-    super.onCreate(savedInstanceState);
-    setContentView(R.layout.activity_second);
-
-    text = getIntent().getExtras().getString("Text");
-     */
-
     fun onClickSettings(view: View) {
         val intent: Intent = Intent(this, SettingsActivity::class.java)
-        // TODO: Determine if this is correct.
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-        intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
         startActivity(intent)
     }
 
-    class myCursor: MatrixCursor(arrayOf<String>("Mode")) {
-
-    }
-
-    fun onClickManageMode(view: View) {
-            val builder = AlertDialog.Builder(this)
-        builder.setTitle("Mode")
-        builder.setMessage("Current Mode: TODO")
-        val items: List<GameServer.GameMode> = listOf(GameServer.GameMode.SERVER,GameServer.GameMode.CLIENT,GameServer.GameMode.LOCAL)
-        var checkedItem = items[0]  // FIXME - get current mode
-
-        var cursor: MatrixCursor = MatrixCursor(arrayOf("_id", "Mode"))
-        cursor.addRow(arrayOf(0, "CLIENT"))
-        cursor.addRow(arrayOf(1, "SERVER"))
-        cursor.addRow(arrayOf(2, "LOCAL"))
-
-
-//        cursor.RowBuilder.add("")
-
-/*        val cursor = MatrixCursor(arrayOf("Mode"))
-        var i = 0
-        for (s in suggestions) {
-            val temp = arrayOfNulls<String>(2)
-            temp[0] = Integer.toString(i)
-            temp[1] = s
-            i++
-            cursor.addRow(temp)
-        }*/
-
-//        var cursor: Cursor = {}  // FIXME: How do I create this cursor????
-        var checkedItemIndex = 1
-        builder.setSingleChoiceItems(cursor, checkedItemIndex, "Mode") {
-                dialog_, which ->
-                checkedItemIndex = which
-                checkedItem = items[which]
-            }
-
-        builder.setNegativeButton(getString(R.string.go_back_message)) { _, _ -> }
-        builder.show()
-    }
-
     fun onClickJoinRemote(view: View) {
-        val builder = AlertDialog.Builder(this)
-        builder.setTitle("Remote Connect")
-        builder.setMessage("Enter Remote Address")
 
-        // TODO: User input of remote IP address
-        val input = EditText(this)
-        // Specify the type of input expected; this, for example, sets the input as a password, and will mask the text
-        input.inputType = InputType.TYPE_CLASS_TEXT
-        val preferences = getPreferences(MODE_PRIVATE)
-        // TODO - get default from GameServer
-        val prevServer = preferences.getString("RemoteServer", "192.168.1.").toString()
-        input.setText(prevServer)
-        builder.setView(input)
-
-        builder.setPositiveButton("Join") { _, _ ->
-            val remoteIP = input.text.toString()
-            val editor = preferences.edit()
-            editor.putString("RemoteServer", remoteIP)
-            editor.apply()
-            Log.d(TAG, "TODO Connect to $remoteIP")
-            localGameServer?.queueClientRequest("RemoteServer:$remoteIP")
-        }
-        builder.setNegativeButton(getString(R.string.go_back_message)) { _, _ -> }
-        builder.show()
     }
 
     fun onClickExitApp(view: View) {
@@ -266,8 +179,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun enableMessagesFromGameServer() {
         val intentFilter = IntentFilter()
-        intentFilter.addAction(packageName + DISPLAY_INTENT_SUFFIX)
+        intentFilter.addAction(packageName + DISPLAY_MESSAGE_SUFFIX)
         registerReceiver(gameMessageReceiver, intentFilter)
+        Log.d(TAG, "Enabled message receiver for [${packageName + DISPLAY_MESSAGE_SUFFIX}]")
     }
 
     private fun disableMessagesFromGameServer() {
@@ -316,7 +230,7 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private val TAG = MainActivity::class.java.simpleName
-        val DISPLAY_INTENT_SUFFIX = ".display.UPDATE"
+        val DISPLAY_MESSAGE_SUFFIX = ".$TAG.display.UPDATE"
     }
 
 }

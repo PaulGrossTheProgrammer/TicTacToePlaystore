@@ -20,10 +20,8 @@ class SettingsActivity : AppCompatActivity() {
 
     fun onClickBack(view: View) {
         val intent: Intent = Intent(this, MainActivity::class.java)
-        // TODO: Determine if this is correct.
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-        intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
-        intent.putExtra("Text","Some Text Data");  // Optional data passing to new Activity
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
         startActivity(intent)
     }
 

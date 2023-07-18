@@ -6,7 +6,6 @@ import android.content.SharedPreferences
 import android.net.ConnectivityManager
 import android.util.Log
 import java.lang.Exception
-import java.net.InetAddress
 import java.util.Queue
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
@@ -326,7 +325,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
     private fun messageUIResetDisplay() {
         val intent = Intent()
-        intent.action = context.packageName + MainActivity.DISPLAY_INTENT_SUFFIX
+        intent.action = context.packageName + MainActivity.DISPLAY_MESSAGE_SUFFIX
         intent.putExtra("reset", true)
         context.sendBroadcast(intent)
     }
@@ -341,14 +340,14 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         }
         Log.d(TAG, "About to send IP Address List: [$listAsString] ...")
         val intent = Intent()
-        intent.action = context.packageName + MainActivity.DISPLAY_INTENT_SUFFIX
+        intent.action = context.packageName + MainActivity.DISPLAY_MESSAGE_SUFFIX
 //        intent.action = context.packageName + ".display.UPDATE"
         intent.putExtra("ipaddress", listAsString)
         context.sendBroadcast(intent)
     }
     private fun messageUIDisplayGrid() {
         val intent = Intent()
-        intent.action = context.packageName + MainActivity.DISPLAY_INTENT_SUFFIX
+        intent.action = context.packageName + MainActivity.DISPLAY_MESSAGE_SUFFIX
 //        intent.action = context.packageName + ".display.UPDATE"
         val gs = encodeGrid()
         Log.d(TAG, "About to send grid: [$gs]")
@@ -360,7 +359,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
     private fun messageUIDisplayVictory(winSquares: List<Int>) {
         val intent = Intent()
 //        intent.action = context.packageName + ".display.UPDATE"
-        intent.action = context.packageName + MainActivity.DISPLAY_INTENT_SUFFIX
+        intent.action = context.packageName + MainActivity.DISPLAY_MESSAGE_SUFFIX
         val squares = winSquares[0].toString() + winSquares[1].toString() + winSquares[2].toString()
         intent.putExtra("winsquares", squares)
         context.sendBroadcast(intent)
@@ -369,7 +368,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
     private fun messageUIDisplayWinner(winner: String) {
         val intent = Intent()
 //        intent.action = context.packageName + ".display.UPDATE"
-        intent.action = context.packageName + MainActivity.DISPLAY_INTENT_SUFFIX
+        intent.action = context.packageName + MainActivity.DISPLAY_MESSAGE_SUFFIX
         intent.putExtra("winner", winner)
         context.sendBroadcast(intent)
     }
