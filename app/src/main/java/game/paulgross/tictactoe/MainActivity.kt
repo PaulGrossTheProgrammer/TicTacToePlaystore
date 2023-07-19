@@ -15,8 +15,6 @@ import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity() {
 
-    private var localGameServer: GameServer? = null
-
     private var displaySquareList: MutableList<TextView?> = mutableListOf()
     private var textPlayerView: TextView? = null
 
@@ -66,8 +64,8 @@ class MainActivity : AppCompatActivity() {
 
         enableMessagesFromGameServer()
 
-        localGameServer = GameServer.getSingleton(applicationContext, getPreferences(MODE_PRIVATE))
-        localGameServer?.queueClientRequest("resume:")
+        GameServer.activate(applicationContext, getPreferences(MODE_PRIVATE))
+        GameServer.queueClientRequest("resume:")
     }
 
     override fun onStop() {
@@ -81,7 +79,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun stopGameServer() {
         Log.d(TAG, "Stopping the game server ...")
-        localGameServer?.shutdown()  // Should I queue a request instead???
+        GameServer.queueClientRequest("shutdown:")
     }
 
     /**
@@ -134,7 +132,7 @@ class MainActivity : AppCompatActivity() {
             Log.d(TAG, "The user did NOT click a grid square.")
             return
         }
-        localGameServer?.queueClientRequest("s:$gridIndex")
+        GameServer.queueClientRequest("s:$gridIndex")
     }
 
     private fun displayCurrPlayer(player: String) {
@@ -149,7 +147,7 @@ class MainActivity : AppCompatActivity() {
         builder.setTitle(getString(R.string.new_game_title_message))
         builder.setMessage(getString(R.string.new_game_confirm_message))
         builder.setPositiveButton(getString(R.string.new_button_message)) { _, _ ->
-            localGameServer?.queueClientRequest("reset:")
+            GameServer.queueClientRequest("reset:")
         }
         builder.setNegativeButton(getString(R.string.go_back_message)) { _, _ -> }
         builder.show()

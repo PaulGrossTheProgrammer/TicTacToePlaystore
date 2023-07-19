@@ -12,8 +12,6 @@ import android.widget.TextView
 
 class SettingsActivity : AppCompatActivity() {
 
-    private var localGameServer: GameServer? = null
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
@@ -21,8 +19,8 @@ class SettingsActivity : AppCompatActivity() {
         enableMessagesFromGameServer()
 
         Log.d(TAG, "Getting GameServer ...")
-        localGameServer = GameServer.getSingleton(applicationContext, getPreferences(MODE_PRIVATE))
-        localGameServer?.queueClientRequest("netStatus:")
+        GameServer.activate(applicationContext, getPreferences(MODE_PRIVATE))
+        GameServer.queueClientRequest("netStatus:")
     }
 
     override fun onBackPressed() {

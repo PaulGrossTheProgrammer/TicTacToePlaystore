@@ -17,6 +17,8 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
     private var socketServer: SocketServer? = null
     private var socketClient: SocketClient? = null
 
+    private val working = AtomicBoolean(true)
+
     private val gameRequestQ: BlockingQueue<ClientRequest> = LinkedBlockingQueue()
     private val context: Context
     private val preferences: SharedPreferences
@@ -63,7 +65,6 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
     data class ClientRequest(val requestString: String, val responseQ: Queue<String?>?)
 
-    private val working = AtomicBoolean(true)
 
     private val allIpAddresses: MutableList<String> = mutableListOf()
 
@@ -102,9 +103,11 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
                 if (requestString.startsWith("RemoteServer:")) {
                     Log.d(TAG, "TODO: Switch to remote mode [$requestString]")
                 }
-
                 if (requestString == "netStatus:") {
                     messageSettingsDisplayIpAddress(allIpAddresses)
+                }
+                if (requestString == "shutdown:") {
+                    shutdown()
                 }
             }
 
@@ -288,10 +291,11 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         Log.d(TAG, "The Game Server is shutting down ...")
         working.set(false)
 
-        socketServer?.shutdown()  // Only in SERVER mode.
+        if (gameMode == GameMode.SERVER) {
+            socketServer?.shutdown()
+        }
 
-        // TODO - shut down client in CLIENT mode.
-
+        // TODO - shut down client when in CLIENT mode.
         singletonGameServer = null
     }
 
@@ -473,7 +477,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         @SuppressLint("StaticFieldLeak")
         private var singletonGameServer: GameServer? = null
 
-        fun getSingleton(applicationContext: Context, sharedPreferences: SharedPreferences): GameServer? {
+        fun activate(applicationContext: Context, sharedPreferences: SharedPreferences) {
             if (singletonGameServer == null) {
                 Log.d(TAG, "Starting new GameServer ...")
                 singletonGameServer = GameServer(applicationContext, sharedPreferences)
@@ -481,7 +485,12 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             } else {
                 Log.d(TAG, "Already created GameServer.")
             }
-            return singletonGameServer
+        }
+
+        fun queueClientRequest(request: String) {
+            if (singletonGameServer?.working!!.get()) {
+                singletonGameServer?.gameRequestQ?.add(ClientRequest(request, null))
+            }
         }
     }
 }
