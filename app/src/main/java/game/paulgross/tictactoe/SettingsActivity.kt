@@ -8,6 +8,7 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.widget.TextView
 
 class SettingsActivity : AppCompatActivity() {
 
@@ -21,9 +22,10 @@ class SettingsActivity : AppCompatActivity() {
 
         Log.d(TAG, "Getting GameServer ...")
         localGameServer = GameServer.getSingleton(applicationContext, getPreferences(MODE_PRIVATE))
+        localGameServer?.queueClientRequest("netStatus:")
     }
 
-    public override fun onBackPressed() {
+    override fun onBackPressed() {
         //  Prevents the back button from working.
     }
 
@@ -32,6 +34,10 @@ class SettingsActivity : AppCompatActivity() {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
         startActivity(intent)
+    }
+
+    fun onClickJoinRemote(view: View) {
+        // TODO
     }
 
     private fun enableMessagesFromGameServer() {
@@ -51,6 +57,13 @@ class SettingsActivity : AppCompatActivity() {
     private val gameMessageReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             Log.d(TAG, "Received broadcast message = [$intent]")
+
+            val ipAddress = intent.getStringExtra("ipaddress")
+
+            if (ipAddress != null) {
+                Log.d(TAG, "Received IP Address = [$ipAddress]")
+                findViewById<TextView>(R.id.textViewIPAddress).text = ipAddress
+            }
         }
     }
 

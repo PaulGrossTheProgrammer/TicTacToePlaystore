@@ -86,7 +86,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         restoreGameState()
         messageUIDisplayGrid()
         updateWinDisplay()
-        messageUIDisplayIpAddress(allIpAddresses)  // Move this to Settings Activity
+//        messageSettingsDisplayIpAddress(allIpAddresses)  // Move this to Settings Activity
 
         // TODO: Experimental client
         var tempClientTestRun = false
@@ -101,6 +101,10 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
                 responseQ = request.responseQ
                 if (requestString.startsWith("RemoteServer:")) {
                     Log.d(TAG, "TODO: Switch to remote mode [$requestString]")
+                }
+
+                if (requestString == "netStatus:") {
+                    messageSettingsDisplayIpAddress(allIpAddresses)
                 }
             }
 
@@ -220,7 +224,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             restoreGameState()
             messageUIDisplayGrid()
             updateWinDisplay()
-            messageUIDisplayIpAddress(allIpAddresses)
+//            messageSettingsDisplayIpAddress(allIpAddresses)
         }
         if (requestString.startsWith("s:", true)) {
             val indexString = requestString[2].toString()
@@ -335,7 +339,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         context.sendBroadcast(intent)
     }
 
-    private fun messageUIDisplayIpAddress(addrList: List<String>) {
+    private fun messageSettingsDisplayIpAddress(addrList: List<String>) {
         var listAsString = ""
         addrList.forEach { addr ->
             if (!listAsString.isEmpty()) {
@@ -345,8 +349,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         }
         Log.d(TAG, "About to send IP Address List: [$listAsString] ...")
         val intent = Intent()
-        intent.action = context.packageName + MainActivity.DISPLAY_MESSAGE_SUFFIX
-//        intent.action = context.packageName + ".display.UPDATE"
+        intent.action = context.packageName + SettingsActivity.DISPLAY_MESSAGE_SUFFIX
         intent.putExtra("ipaddress", listAsString)
         context.sendBroadcast(intent)
     }

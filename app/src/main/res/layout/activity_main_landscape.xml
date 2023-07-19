@@ -7,29 +7,6 @@
     tools:context=".MainActivity">
 
     <TextView
-        android:id="@+id/textViewIPAddress"
-        android:layout_width="200dp"
-        android:layout_height="50dp"
-        android:layout_marginTop="4dp"
-        android:text="IP Address"
-        android:textSize="14sp"
-        app:layout_constraintEnd_toStartOf="@+id/textSquare4"
-        app:layout_constraintHorizontal_bias="0.492"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textPlayer" />
-
-    <Button
-        android:id="@+id/buttonJoinGame"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:onClick="onClickJoinRemote"
-        android:text="Join Game"
-        android:textSize="16sp"
-        app:layout_constraintStart_toStartOf="@+id/textViewIPAddress"
-        app:layout_constraintTop_toBottomOf="@+id/textViewIPAddress" />
-
-    <TextView
         android:id="@+id/textTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

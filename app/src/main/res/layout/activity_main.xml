@@ -218,27 +218,5 @@
         app:layout_constraintStart_toEndOf="@+id/textSquare2"
         app:layout_constraintTop_toBottomOf="@+id/textTitle" />
 
-    <TextView
-        android:id="@+id/textViewIPAddress"
-        android:layout_width="215dp"
-        android:layout_height="80dp"
-        android:layout_marginTop="16dp"
-        android:text="IP Address"
-        android:textSize="16sp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textPlayer" />
-
-    <Button
-        android:id="@+id/buttonJoinGame"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:onClick="onClickJoinRemote"
-        android:text="Join Game"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textViewIPAddress" />
-
 
 </androidx.constraintlayout.widget.ConstraintLayout>

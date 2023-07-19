@@ -163,10 +163,6 @@ class MainActivity : AppCompatActivity() {
         startActivity(intent)
     }
 
-    fun onClickJoinRemote(view: View) {
-
-    }
-
     fun onClickExitApp(view: View) {
         confirmExitApp()
     }
@@ -211,15 +207,11 @@ class MainActivity : AppCompatActivity() {
             val playerString = intent.getStringExtra("player")
             val winsquaresString = intent.getStringExtra("winsquares")
             val winnerString = intent.getStringExtra("winner")
-            val ipAddress = intent.getStringExtra("ipaddress")
 
             if (resetFlag) {
                 resetGridDisplay()
             }
-            if (ipAddress != null) {
-                Log.d(TAG, "Received IP Address = [$ipAddress]")
-                findViewById<TextView>(R.id.textViewIPAddress).text = ipAddress
-            }
+
             if (gridStateString != null) {
                 Log.d(TAG, "Received current grid State = [$gridStateString]")
                 displayGrid(gridStateString)
