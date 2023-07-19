@@ -6,9 +6,12 @@ import android.content.Intent
 import android.content.IntentFilter
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.text.InputType
 import android.util.Log
 import android.view.View
+import android.widget.EditText
 import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
 
 class SettingsActivity : AppCompatActivity() {
 
@@ -34,8 +37,37 @@ class SettingsActivity : AppCompatActivity() {
         startActivity(intent)
     }
 
+    fun onClickLocal(view: View) {
+        GameServer.queueClientRequest("StartLocal:")
+    }
+
+    fun onClickStartServer(view: View) {
+        GameServer.queueClientRequest("StartServer:")
+    }
+
     fun onClickJoinRemote(view: View) {
-        // TODO
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("Remote Connect")
+        builder.setMessage("Enter Remote Address")
+
+        val input = EditText(this)
+// Specify the type of input expected; this, for example, sets the input as a password, and will mask the text
+        input.inputType = InputType.TYPE_CLASS_TEXT
+        val preferences = getPreferences(MODE_PRIVATE)
+        val prevServer = preferences.getString("RemoteServer", "192.168.1.").toString()
+        input.setText(prevServer)
+        builder.setView(input)
+
+        builder.setPositiveButton("Join") { _, _ ->
+            val remoteIP = input.text.toString()
+            val editor = preferences.edit()
+            editor.putString("RemoteServer", remoteIP)
+            editor.apply()
+            Log.d(TAG, "TODO Connect to $remoteIP")
+            GameServer.queueClientRequest("RemoteServer:$remoteIP")
+        }
+        builder.setNegativeButton(getString(R.string.go_back_message)) { _, _ -> }
+        builder.show()
     }
 
     private fun enableMessagesFromGameServer() {

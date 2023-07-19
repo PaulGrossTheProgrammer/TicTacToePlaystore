@@ -100,8 +100,18 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             if (request != null) {
                 requestString = request.requestString
                 responseQ = request.responseQ
+                if (requestString == "StartServer:") {
+                    switchToLocalServerMode()
+                }
+                if (requestString == "StartLocal:") {
+                    switchToPureLocalMode()
+                }
                 if (requestString.startsWith("RemoteServer:")) {
                     Log.d(TAG, "TODO: Switch to remote mode [$requestString]")
+                    val ip = requestString.substringAfter(":", "")
+                    if (ip != "") {
+                        switchToRemoteServerMode(ip)
+                    }
                 }
                 if (requestString == "netStatus:") {
                     messageSettingsDisplayIpAddress(allIpAddresses)
