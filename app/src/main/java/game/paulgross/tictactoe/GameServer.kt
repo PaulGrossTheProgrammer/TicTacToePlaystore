@@ -65,7 +65,6 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
     data class ClientRequest(val requestString: String, val responseQ: Queue<String?>?)
 
-
     private val allIpAddresses: MutableList<String> = mutableListOf()
 
     override fun run() {
@@ -87,10 +86,6 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         restoreGameState()
         messageUIDisplayGrid()
         updateWinDisplay()
-//        messageSettingsDisplayIpAddress(allIpAddresses)  // Move this to Settings Activity
-
-        // TODO: Experimental client
-        var tempClientTestRun = false
 
         while (working.get()) {
             val request = gameRequestQ.poll()  // Non-blocking read for client requests.
@@ -140,23 +135,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
                 if (requestString != null) {
                     // Note that the client is going to periodically request status.
                     // So only UI actions need to be sent.
-                    handleClientRequest(requestString)
-                }
-
-                // TODO - define and listen to the remote server response queue.
-                // TODO - as the status comes in from the remote server queue, display that:
-//                messageUIDisplayGrid()
-            }
-
-
-            // FIXME: Allow user to switch between client and server.
-            if (tempClientTestRun) {
-                tempClientTestRun = false
-                try {
-                    val socketClient = SocketClient("192.168.1.112", SocketServer.PORT)
-                    socketClient.start()
-                } catch (e: Exception) {
-                    e.printStackTrace()
+                    handleClientRequest(requestString, responseQ)
                 }
             }
 
@@ -177,9 +156,8 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             socketServer?.shutdown()
         }
 
-        // TODO - start SocketClient
         try {
-            val socketClient = SocketClient("192.168.1.112", SocketServer.PORT)
+            val socketClient = SocketClient(address, SocketServer.PORT, gameRequestQ)
             socketClient.start()
         } catch (e: Exception) {
             e.printStackTrace()
@@ -219,12 +197,21 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         gameMode = GameMode.LOCAL
     }
 
-    private fun handleClientRequest(requestString: String) {
+    private fun handleClientRequest(requestString: String, responseQ: Queue<String?>?) {
         if (requestString.startsWith("s:", true)) {
             // TODO: If a square is played, send a non-blocking call to play a move to the SocketClient
             // The socket client passes it on the the socket server, then waits for a response,
             // then queues the response onto the responseQ
+//            responseQ?.add("g:${encodeGrid()}")
         }
+        if (requestString.startsWith("g:", true)) {
+            val remoteGrid = requestString.substringAfter("g:")
+            Log.d(TAG, "Decoding remote grid ...")
+            decodeGrid(remoteGrid)
+            // FIXME: Need current player as well
+            messageUIDisplayGrid()
+        }
+
     }
     private fun handleLocalRequest(requestString: String) {
         if (requestString == "reset:") {
