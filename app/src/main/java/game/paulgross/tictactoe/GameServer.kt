@@ -141,7 +141,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
             // Adjust this period based on context. Fast for server, slower for client.
             // Slower for pause mode.
-            sleep(100L)  // Pause for a short time...
+            sleep(200L)  // Pause for a short time...
         }
         Log.d(TAG, "The Game Server has shut down.")
     }
@@ -199,13 +199,12 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
     private fun handleClientRequest(requestString: String, responseQ: Queue<String?>?) {
         if (requestString.startsWith("p:")) {
-//            socketClient.
             socketClient?.messageFromGameServer(requestString)
         }
 
         if (requestString.startsWith("s:", true)) {
             val remoteState = requestString.substringAfter("s:")
-            Log.d(TAG, "Decoding remote state ...")
+            Log.d(TAG, "Decoding remote state [$remoteState] ...")
             decodeGrid(remoteState.substring(0, 9))
             // FIXME: Need current player as well
             currPlayer = SquareState.valueOf(remoteState[9].toString())
@@ -225,7 +224,6 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             restoreGameState()
             messageUIDisplayGrid()
             updateWinDisplay()
-//            messageSettingsDisplayIpAddress(allIpAddresses)
         }
         if (requestString.startsWith("p:", true)) {
             val indexString = requestString[2].toString()
@@ -245,7 +243,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             val gridIndex = Integer.valueOf(indexString)
             playSquare(gridIndex)
 
-            responseQ?.add("s:${encodeGrid()}$currPlayer")  // TODO: Add curr player. On a new line???
+            responseQ?.add("s:${encodeGrid()}$currPlayer$winner")  // TODO: Change to encode status
             messageUIDisplayGrid()
         }
         if (requestString == "status:") {
