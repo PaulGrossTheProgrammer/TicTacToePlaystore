@@ -132,7 +132,7 @@ class MainActivity : AppCompatActivity() {
             Log.d(TAG, "The user did NOT click a grid square.")
             return
         }
-        GameServer.queueClientRequest("s:$gridIndex")
+        GameServer.queueClientRequest("p:$gridIndex")
     }
 
     private fun displayCurrPlayer(player: String) {

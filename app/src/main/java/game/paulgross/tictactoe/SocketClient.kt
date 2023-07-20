@@ -19,14 +19,25 @@ class SocketClient(private val server: String, private val port: Int, private va
 
     private val clientQ: BlockingQueue<String> = LinkedBlockingQueue()
 
+    private val fromGameServerQ: BlockingQueue<String> = LinkedBlockingQueue()
+
     override fun run() {
         Log.i(TAG, "Client connected...")
         output = PrintWriter(clientSocket.getOutputStream());
         input = BufferedReader(InputStreamReader(clientSocket.getInputStream()));
 
         while (working.get()) {
+            // TODO - read the queue from the GameServer
+            var gameMessage = fromGameServerQ.take()
+
+            if (gameMessage == null) {
+                // TODO - don't overload these requests
+                gameMessage = "status:"
+                Log.i(TAG, "About to send status request ...")
+            }
+
             Log.i(TAG, "About to send status request ...")
-            output.println("status:")
+            output.println(gameMessage)
             output.flush()
             Log.i(TAG, "Sent status request...")
             // Maybe swallow status requests if there is still no response from the last request.
@@ -49,6 +60,10 @@ class SocketClient(private val server: String, private val port: Int, private va
             gameRequestQ.add(GameServer.ClientRequest(response, clientQ))
             sleep(1000L)  // Pause for a short time...
         }
+    }
+
+    fun messageFromGameServer(message: String) {
+        fromGameServerQ.add(message)
     }
 
     fun shutdown() {

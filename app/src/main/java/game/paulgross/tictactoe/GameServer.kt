@@ -151,14 +151,14 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
     }
 
     fun switchToRemoteServerMode(address: String) {
-        Log.d(TAG, "TODO: Switch to Remote Server Mode: $address")
+        Log.d(TAG, "Switch to Remote Server at: $address")
         if (socketServer != null) {
             socketServer?.shutdown()
         }
 
         try {
-            val socketClient = SocketClient(address, SocketServer.PORT, gameRequestQ)
-            socketClient.start()
+            socketClient = SocketClient(address, SocketServer.PORT, gameRequestQ)
+            socketClient!!.start()
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -198,20 +198,21 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
     }
 
     private fun handleClientRequest(requestString: String, responseQ: Queue<String?>?) {
-        if (requestString.startsWith("s:", true)) {
-            // TODO: If a square is played, send a non-blocking call to play a move to the SocketClient
-            // The socket client passes it on the the socket server, then waits for a response,
-            // then queues the response onto the responseQ
-//            responseQ?.add("g:${encodeGrid()}")
-        }
-        if (requestString.startsWith("g:", true)) {
-            val remoteGrid = requestString.substringAfter("g:")
-            Log.d(TAG, "Decoding remote grid ...")
-            decodeGrid(remoteGrid)
-            // FIXME: Need current player as well
-            messageUIDisplayGrid()
+        if (requestString.startsWith("p:")) {
+//            socketClient.
+            socketClient?.messageFromGameServer(requestString)
         }
 
+        if (requestString.startsWith("s:", true)) {
+            val remoteState = requestString.substringAfter("s:")
+            Log.d(TAG, "Decoding remote state ...")
+            decodeGrid(remoteState.substring(0, 9))
+            // FIXME: Need current player as well
+            currPlayer = SquareState.valueOf(remoteState[9].toString())
+            winner = SquareState.valueOf(remoteState[10].toString())
+
+            messageUIDisplayGrid()
+        }
     }
     private fun handleLocalRequest(requestString: String) {
         if (requestString == "reset:") {
@@ -226,7 +227,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             updateWinDisplay()
 //            messageSettingsDisplayIpAddress(allIpAddresses)
         }
-        if (requestString.startsWith("s:", true)) {
+        if (requestString.startsWith("p:", true)) {
             val indexString = requestString[2].toString()
             val gridIndex = Integer.valueOf(indexString)
             playSquare(gridIndex)
@@ -238,19 +239,19 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         Log.d(TAG, "handleServerRequest: [$requestString]")
 
         var validRequest = false
-        if (requestString.startsWith("s:", true)) {
+        if (requestString.startsWith("p:", true)) {
             validRequest = true
             val indexString = requestString[2].toString()
             val gridIndex = Integer.valueOf(indexString)
             playSquare(gridIndex)
 
-            responseQ?.add("g:${encodeGrid()}")  // TODO: Add curr player. On a new line???
+            responseQ?.add("s:${encodeGrid()}$currPlayer")  // TODO: Add curr player. On a new line???
             messageUIDisplayGrid()
         }
         if (requestString == "status:") {
             validRequest = true
             Log.d(TAG, "Handling status ...")
-            responseQ?.add("g:${encodeGrid()}")
+            responseQ?.add("s:${encodeGrid()}$currPlayer$winner")
         }
         if (requestString == "exit:") {
             validRequest = true
