@@ -340,23 +340,25 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
     }
 
     private fun messageSettingsDisplayIpAddress(addrList: List<String>) {
-        var listAsString = ""
-        addrList.forEach { addr ->
-            if (!listAsString.isEmpty()) {
-                listAsString += ", "
+        var listAsString = "Server not running"
+        if (gameMode == GameMode.SERVER) {
+            listAsString = ""
+            addrList.forEach { addr ->
+                if (!listAsString.isEmpty()) {
+                    listAsString += ", "
+                }
+                listAsString += addr
             }
-            listAsString += addr
         }
         Log.d(TAG, "About to send IP Address List: [$listAsString] ...")
         val intent = Intent()
         intent.action = context.packageName + SettingsActivity.DISPLAY_MESSAGE_SUFFIX
-        intent.putExtra("ipaddress", listAsString)
+        intent.putExtra("IpAddressList", listAsString)
         context.sendBroadcast(intent)
     }
     private fun messageUIDisplayGrid() {
         val intent = Intent()
         intent.action = context.packageName + MainActivity.DISPLAY_MESSAGE_SUFFIX
-//        intent.action = context.packageName + ".display.UPDATE"
         val gs = encodeGrid()
         Log.d(TAG, "About to send grid: [$gs]")
         intent.putExtra("grid", encodeGrid())

@@ -51,7 +51,6 @@ class SettingsActivity : AppCompatActivity() {
         builder.setMessage("Enter Remote Address")
 
         val input = EditText(this)
-// Specify the type of input expected; this, for example, sets the input as a password, and will mask the text
         input.inputType = InputType.TYPE_CLASS_TEXT
         val preferences = getPreferences(MODE_PRIVATE)
         val prevServer = preferences.getString("RemoteServer", "192.168.1.").toString()
@@ -81,6 +80,8 @@ class SettingsActivity : AppCompatActivity() {
         unregisterReceiver(gameMessageReceiver)
     }
 
+    private var allIpAddresses: List<String>? = null
+
     /**
     Receive messages from the GameServer.
      */
@@ -88,11 +89,16 @@ class SettingsActivity : AppCompatActivity() {
         override fun onReceive(context: Context, intent: Intent) {
             Log.d(TAG, "Received broadcast message = [$intent]")
 
-            val ipAddress = intent.getStringExtra("ipaddress")
+            val ipAddressList = intent.getStringExtra("IpAddressList")
 
-            if (ipAddress != null) {
-                Log.d(TAG, "Received IP Address = [$ipAddress]")
-                findViewById<TextView>(R.id.textViewIPAddress).text = ipAddress
+            if (ipAddressList != null) {
+                Log.d(TAG, "Received IP Address = [$ipAddressList]")
+                // TODO - delete this simple textview
+                findViewById<TextView>(R.id.textViewIPAddress).text = ipAddressList
+
+                allIpAddresses = ipAddressList.split(",")
+                val primaryAddress = allIpAddresses?.get(allIpAddresses!!.lastIndex)
+                findViewById<TextView>(R.id.textViewAllIPpAddresses).text = primaryAddress
             }
         }
     }
