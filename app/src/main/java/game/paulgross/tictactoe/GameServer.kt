@@ -12,7 +12,7 @@ import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.atomic.AtomicBoolean
 
-class GameServer(applicationContext: Context, sharedPreferences: SharedPreferences) : Thread() {
+class GameServer(applicationContext: Context, sharedPreferences: SharedPreferences): Thread() {
 
     private var socketServer: SocketServer? = null
     private var socketClient: SocketClient? = null
@@ -67,8 +67,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
     private val allIpAddresses: MutableList<String> = mutableListOf()
 
-    override fun run() {
-        // TODO: Move this IP Address code into function that listens to change of network state.
+    private fun determineIpAddresses() {
         val cm: ConnectivityManager = context.getSystemService(ConnectivityManager::class.java)
         val n = cm.activeNetwork
         val lp = cm.getLinkProperties(n)
@@ -81,6 +80,11 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             val thisIpAddress = currIpAddress
             allIpAddresses.add(thisIpAddress)
         }
+    }
+
+    override fun run() {
+        // TODO: Move this IP Address code into function that listens to change of network state.
+        determineIpAddresses()
         Log.d(TAG, "IP Address List: $allIpAddresses")
 
         restoreGameState()
@@ -95,6 +99,9 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             if (request != null) {
                 requestString = request.requestString
                 responseQ = request.responseQ
+                if (requestString == "UpdateSettings") {
+                    messageSettingsDisplayIpAddress(allIpAddresses)
+                }
                 if (requestString == "StartServer:") {
                     switchToLocalServerMode()
                 }
@@ -107,9 +114,6 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
                     if (ip != "") {
                         switchToRemoteServerMode(ip)
                     }
-                }
-                if (requestString == "netStatus:") {
-                    messageSettingsDisplayIpAddress(allIpAddresses)
                 }
                 if (requestString == "shutdown:") {
                     shutdown()
@@ -154,6 +158,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         Log.d(TAG, "Switch to Remote Server at: $address")
         if (socketServer != null) {
             socketServer?.shutdown()
+            allIpAddresses.clear()
         }
 
         try {
@@ -173,9 +178,9 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             socketClient?.shutdown()
         }
 
-        // TODO - start up SocketServer
         socketServer = SocketServer(gameRequestQ)
         socketServer!!.start()
+        determineIpAddresses()
 
         // FIXME - don't WAIT here - it will hold the main thread.
         // Instead, queue a request to change mode to enable main thread to proceed.
@@ -186,6 +191,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         Log.d(TAG, "TODO: Switch to Local Server Mode.")
         if (socketServer != null) {
             socketServer?.shutdown()
+            allIpAddresses.clear()
         }
 
         if (socketClient != null) {
@@ -307,9 +313,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         for (i in 0..8) {
             editor.putString("Grid$i", grid[i].toString())
         }
-
         editor.putString("CurrPlayer", currPlayer.toString())
-
         editor.apply()
         Log.d(TAG, "Saved game state.")
     }
@@ -368,7 +372,6 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
     private fun messageUIDisplayVictory(winSquares: List<Int>) {
         val intent = Intent()
-//        intent.action = context.packageName + ".display.UPDATE"
         intent.action = context.packageName + MainActivity.DISPLAY_MESSAGE_SUFFIX
         val squares = winSquares[0].toString() + winSquares[1].toString() + winSquares[2].toString()
         intent.putExtra("winsquares", squares)

@@ -28,25 +28,21 @@ class SocketClient(private val server: String, private val port: Int, private va
 
         while (working.get()) {
             // TODO - read the queue from the GameServer
-            var gameMessage = fromGameServerQ.take()
+            var gameMessage = fromGameServerQ.poll()
 
             if (gameMessage == null) {
-                // TODO - don't overload these requests
+                // TODO - don't overdo these status requests. Flag if we are waiting from the prev status.
+                // Maybe don't make status requests if there is still no response from the last request.
+                // To avoid making the remote server to busy.
+                // But after a while give up waiting, and ask for a new status request???
                 gameMessage = "status:"
                 Log.i(TAG, "About to send status request ...")
             }
 
-            Log.i(TAG, "About to send status request ...")
             output.println(gameMessage)
             output.flush()
-            Log.i(TAG, "Sent status request...")
-            // Maybe swallow status requests if there is still no response from the last request.
-            // To avoid making the remote server to busy.
-            // But after a while give up waiting, and ask for a new status request???
-            // This way requests are responses are not matched, but that shouldn't matter
-            // if each response contains an update from the server.
-            // Perhaps the game server shouldn't specifically request status, but leave it to this Thread???
 
+            // TODO - determine if this still works on a different thread...
             Log.i(TAG, "About to get server response ...")
             var response = input.readLine()
             Log.i(TAG, "Server response [$response]")
@@ -54,11 +50,10 @@ class SocketClient(private val server: String, private val port: Int, private va
             // This is to avoid overrunning the TCPIP buffer.
             // In this case, loop multiple readLine() calls here to assemble the entire response.
 
-//            clientQ.add(GameServer.ClientRequest(response, clientQ).toString())
 //            GameServer.queueClientRequest(GameServer.ClientRequest(response, clientQ))
             // FIXME: If the server stops we get a null pointer exception here
             gameRequestQ.add(GameServer.ClientRequest(response, clientQ))
-            sleep(1000L)  // Pause for a short time...
+            sleep(200L)  // Pause for a short time...
         }
     }
 

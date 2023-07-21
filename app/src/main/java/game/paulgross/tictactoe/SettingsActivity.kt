@@ -15,6 +15,23 @@ import androidx.appcompat.app.AlertDialog
 
 class SettingsActivity : AppCompatActivity() {
 
+    val periodicUpdateThread: PeriodicUpdater = PeriodicUpdater()
+
+    class PeriodicUpdater: Thread() {
+
+        private var working = true
+        override fun run() {
+            while (working) {
+                GameServer.queueClientRequest("UpdateSettings")
+                sleep(1000L)
+            }
+        }
+
+        fun shutdown() {
+            working = false
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
@@ -23,7 +40,13 @@ class SettingsActivity : AppCompatActivity() {
 
         Log.d(TAG, "Getting GameServer ...")
         GameServer.activate(applicationContext, getPreferences(MODE_PRIVATE))
-        GameServer.queueClientRequest("netStatus:")
+
+        periodicUpdateThread.start()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        periodicUpdateThread.shutdown()
     }
 
     override fun onBackPressed() {
