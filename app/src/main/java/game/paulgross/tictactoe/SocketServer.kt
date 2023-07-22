@@ -26,7 +26,7 @@ class SocketServer(private val gameRequestQ: BlockingQueue<GameServer.ClientRequ
                 Log.i(TAG, "New client: $clientSocket")
 
                 // Create a new Thread for each client.
-                val t = SocketClientHandler(clientSocket, gameRequestQ, this)
+                val t = SocketClientHandler(clientSocket,this)
                 t.start()
 
                 // This list allows us to remove each Handler if the client disconnects

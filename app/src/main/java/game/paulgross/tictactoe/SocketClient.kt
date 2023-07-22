@@ -2,7 +2,6 @@ package game.paulgross.tictactoe
 
 import android.util.Log
 import java.io.BufferedReader
-import java.io.DataInputStream
 import java.io.IOException
 import java.io.InputStreamReader
 import java.io.PrintWriter
@@ -11,7 +10,7 @@ import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.atomic.AtomicBoolean
 
-class SocketClient(private val server: String, private val port: Int, private val gameRequestQ: BlockingQueue<GameServer.ClientRequest>): Thread() {
+class SocketClient(private val server: String, private val port: Int): Thread() {
     private var clientSocket: Socket = Socket(server, port)
     private val working = AtomicBoolean(true)
 
@@ -58,7 +57,8 @@ class SocketClient(private val server: String, private val port: Int, private va
 
 //            GameServer.queueClientRequest(GameServer.ClientRequest(response, clientQ))
                 // FIXME: If the server suddenly stops we get a null pointer exception here
-                gameRequestQ.add(GameServer.ClientRequest(response, clientQ))
+//                gameRequestQ.add(GameServer.ClientRequest(response, clientQ))
+                GameServer.queueClientRequest(response, clientQ)
                 sleep(200L)  // Pause for a short time...
             }
         }

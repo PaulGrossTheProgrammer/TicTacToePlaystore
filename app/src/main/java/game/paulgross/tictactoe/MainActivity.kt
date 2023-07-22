@@ -65,7 +65,7 @@ class MainActivity : AppCompatActivity() {
         enableMessagesFromGameServer()
 
         GameServer.activate(applicationContext, getPreferences(MODE_PRIVATE))
-        GameServer.queueClientRequest("resume:")
+        GameServer.queueActivityRequest("resume:")
     }
 
     override fun onStop() {
@@ -79,7 +79,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun stopGameServer() {
         Log.d(TAG, "Stopping the game server ...")
-        GameServer.queueClientRequest("shutdown:")
+        GameServer.queueActivityRequest("shutdown:")
     }
 
     /**
@@ -132,7 +132,7 @@ class MainActivity : AppCompatActivity() {
             Log.d(TAG, "The user did NOT click a grid square.")
             return
         }
-        GameServer.queueClientRequest("p:$gridIndex")
+//        GameServer.queueClientRequest("p:$gridIndex")
         GameServer.queueActivityRequest("p:$gridIndex")
     }
 
@@ -148,7 +148,8 @@ class MainActivity : AppCompatActivity() {
         builder.setTitle(getString(R.string.new_game_title_message))
         builder.setMessage(getString(R.string.new_game_confirm_message))
         builder.setPositiveButton(getString(R.string.new_button_message)) { _, _ ->
-            GameServer.queueClientRequest("reset:")
+//            GameServer.queueClientRequest("reset:")
+            GameServer.queueActivityRequest("reset:")
         }
         builder.setNegativeButton(getString(R.string.go_back_message)) { _, _ -> }
         builder.show()

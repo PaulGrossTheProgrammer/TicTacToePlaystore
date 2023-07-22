@@ -19,7 +19,8 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
     private val working = AtomicBoolean(true)
 
-    private val gameRequestQ: BlockingQueue<ClientRequest> = LinkedBlockingQueue()
+    private val fromClientHandlerToGameServerQ: BlockingQueue<ClientRequest> = LinkedBlockingQueue()
+    private val fromClientToGameServerQ: BlockingQueue<ClientRequest> = LinkedBlockingQueue()
     private val fromActivitiesToGameSeverQ: BlockingQueue<String> = LinkedBlockingQueue()
     private val context: Context
     private val preferences: SharedPreferences
@@ -64,7 +65,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
     private var currPlayer: SquareState = SquareState.X
     private var winner = SquareState.E
 
-    data class ClientRequest(val requestString: String, val responseQ: Queue<String?>?)
+    data class ClientRequest(val requestString: String, val responseQ: Queue<String>)
 
     private val allIpAddresses: MutableList<String> = mutableListOf()
 
@@ -90,60 +91,22 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         updateWinDisplay()
 
         while (working.get()) {
-            // TODO - create a special queue for requests from Activity classes.
-            val request = gameRequestQ.poll()  // Non-blocking read for client requests.
-            var requestString: String? = null
-            var responseQ: Queue<String?>? = null
-
-            if (request != null) {
-                requestString = request.requestString
-                responseQ = request.responseQ
-                if (requestString == "UpdateSettings") {
-                    messageSettingsDisplayIpAddress(allIpAddresses)
-                }
-                if (requestString == "StartServer:") {
-                    switchToLocalServerMode()
-                }
-                if (requestString == "StartLocal:") {
-                    switchToPureLocalMode()
-                }
-                if (requestString.startsWith("RemoteServer:")) {
-                    Log.d(TAG, "TODO: Switch to remote mode [$requestString]")
-                    val ip = requestString.substringAfter(":", "")
-                    if (ip != "") {
-                        switchToRemoteServerMode(ip)
-                    }
-                }
-                if (requestString == "shutdown:") {
-                    shutdown()
-                }
+            val activityRequest = fromActivitiesToGameSeverQ.poll()  // Non-blocking read.
+            if (activityRequest != null) {
+                handleActivityMessage(activityRequest)
             }
 
-            if (gameMode == GameMode.SERVER || gameMode == GameMode.LOCAL) {
+            val clientHandlerMessage = fromClientHandlerToGameServerQ.poll()  // Non-blocking read.
+            if (clientHandlerMessage != null) {
                 // TODO - clear at least a few client requests if there are many queued up.
-                if (requestString != null) {
-//                    Log.d(TAG, "Received Request: [$requestString]")
-
-                    if (responseQ == null) {
-                        // Local requests don't have a response Queue.
-                        handleLocalRequest(requestString)
-                    } else {
-                        handleServerRequest(requestString, responseQ)
-                    }
-
-                }
+                handleClientHandlerMessage(clientHandlerMessage.requestString, clientHandlerMessage.responseQ)
             }
 
-            if (gameMode == GameMode.CLIENT) {
-                if (requestString != null) {
-                    // Note that the client is going to periodically request status.
-                    // So only UI actions need to be sent.
-                    handleClientRequest(requestString, responseQ)
-                }
+            val clientMessage = fromClientToGameServerQ.poll()  // Non-blocking read.
+            if (clientMessage != null) {
+                handleClientMessage(clientMessage.requestString, clientMessage.responseQ)
             }
 
-            // Adjust this period based on context. Fast for server, slower for client.
-            // Slower for pause mode.
             sleep(200L)  // Pause for a short time...
         }
         Log.d(TAG, "The Game Server has shut down.")
@@ -161,7 +124,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         }
 
         try {
-            socketClient = SocketClient(address, SocketServer.PORT, gameRequestQ)
+            socketClient = SocketClient(address, SocketServer.PORT)
             socketClient!!.start()
         } catch (e: Exception) {
             e.printStackTrace()
@@ -177,7 +140,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             socketClient?.shutdown()
         }
 
-        socketServer = SocketServer(gameRequestQ)
+        socketServer = SocketServer(fromClientHandlerToGameServerQ)
         socketServer!!.start()
         determineIpAddresses()
 
@@ -202,7 +165,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
     var previousStateUpdate = ""
 
-    private fun handleClientRequest(requestString: String, responseQ: Queue<String?>?) {
+    private fun handleClientMessage(requestString: String, responseQ: Queue<String>) {
         if (requestString.startsWith("p:")) {
             socketClient?.messageFromGameServer(requestString)
         }
@@ -223,7 +186,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             messageUIDisplayGrid()
         }
     }
-    private fun handleLocalRequest(requestString: String) {
+    private fun handleActivityMessage(requestString: String) {
         if (requestString == "reset:") {
             resetGame()
             messageUIResetDisplay()
@@ -241,10 +204,28 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             playSquare(gridIndex)
             messageUIDisplayGrid()
         }
+        if (requestString == "UpdateSettings") {
+            messageSettingsDisplayIpAddress(allIpAddresses)
+        }
+        if (requestString == "StartServer:") {
+            switchToLocalServerMode()
+        }
+        if (requestString == "StartLocal:") {
+            switchToPureLocalMode()
+        }
+        if (requestString.startsWith("RemoteServer:")) {
+            Log.d(TAG, "TODO: Switch to remote mode [$requestString]")
+            val ip = requestString.substringAfter(":", "")
+            if (ip != "") {
+                switchToRemoteServerMode(ip)
+            }
+        }
+        if (requestString == "shutdown:") {
+            shutdown()
+        }
     }
 
-    private fun handleServerRequest(requestString: String, responseQ: Queue<String?>?) {
-//        Log.d(TAG, "handleServerRequest: [$requestString]")
+    private fun handleClientHandlerMessage(requestString: String, responseQ: Queue<String>) {
 
         var validRequest = false
         if (requestString.startsWith("p:", true)) {
@@ -272,10 +253,6 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         }
     }
 
-    fun queueClientRequest(request: String) {
-        gameRequestQ.add(ClientRequest(request, null))
-    }
-
     fun pauseApp() {
         // TODO - pause App mode while the MainActivity is suspended or being updated.
     }
@@ -297,6 +274,10 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         working.set(false)
 
         if (gameMode == GameMode.SERVER) {
+            socketServer?.shutdown()
+        }
+
+        if (gameMode == GameMode.CLIENT) {
             socketServer?.shutdown()
         }
 
@@ -491,15 +472,21 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             }
         }
 
-        fun queueClientRequest(request: String) {
-            if (singletonGameServer?.working!!.get()) {
-                singletonGameServer?.gameRequestQ?.add(ClientRequest(request, null))
-            }
-        }
-
         fun queueActivityRequest(request: String) {
             if (singletonGameServer?.working!!.get()) {
                 singletonGameServer?.fromActivitiesToGameSeverQ?.add(request)
+            }
+        }
+
+        fun queueClientHandlerRequest(request: String, responseQ: Queue<String>) {
+            if (singletonGameServer?.working!!.get()) {
+                singletonGameServer?.fromClientHandlerToGameServerQ?.add(ClientRequest(request, responseQ))
+            }
+        }
+
+        fun queueClientRequest(request: String, responseQ: Queue<String>) {
+            if (singletonGameServer?.working!!.get()) {
+                singletonGameServer?.fromClientToGameServerQ?.add(ClientRequest(request, responseQ))
             }
         }
     }

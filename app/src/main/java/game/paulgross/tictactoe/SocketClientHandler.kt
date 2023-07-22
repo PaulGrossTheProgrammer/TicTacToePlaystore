@@ -14,7 +14,7 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.atomic.AtomicBoolean
 
 
-class SocketClientHandler(private val socket: Socket, private val sendToGameServerQ: BlockingQueue<GameServer.ClientRequest>, private val socketServer: SocketServer): Thread() {
+class SocketClientHandler(private val socket: Socket, private val socketServer: SocketServer): Thread() {
 
     private val sendToThisHandlerQ: BlockingQueue<String> = LinkedBlockingQueue()
 
@@ -24,7 +24,7 @@ class SocketClientHandler(private val socket: Socket, private val sendToGameServ
     override fun run() {
         val output = BufferedWriter(OutputStreamWriter(DataOutputStream(socket.getOutputStream())))
 
-        SocketReaderThread(socket, sendToGameServerQ, sendToThisHandlerQ, listeningToSocket).start()
+        SocketReaderThread(socket, sendToThisHandlerQ, listeningToSocket).start()
 
         Log.d(TAG, "New client connection handler started ...")
         while (listeningToGameServer.get()) {
@@ -51,6 +51,7 @@ class SocketClientHandler(private val socket: Socket, private val sendToGameServ
         listeningToGameServer.set(false)
         socket.close()
 
+        // Maybe do this with a static call?
         socketServer.removeClientHandler(this)  // Can't the SocketServer do this by itself???
     }
 
@@ -61,8 +62,8 @@ class SocketClientHandler(private val socket: Socket, private val sendToGameServ
         sendToThisHandlerQ?.add("shutdown")
     }
 
-    private class SocketReaderThread(private val socket: Socket, private val sendToGameServerQ: BlockingQueue<GameServer.ClientRequest>,
-                                     private val sendToThisHandlerQ: BlockingQueue<String>, private var listeningToSocket: AtomicBoolean): Thread() {
+    private class SocketReaderThread(private val socket: Socket, private val sendToThisHandlerQ: BlockingQueue<String>,
+                                     private var listeningToSocket: AtomicBoolean): Thread() {
 
         val input = BufferedReader(InputStreamReader(DataInputStream(socket.getInputStream())))
 
@@ -74,7 +75,8 @@ class SocketClientHandler(private val socket: Socket, private val sendToGameServ
                     // TODO - determine if data == null when the remote socket closes...
                     if (data != null) {
                         Log.d(TAG, "Got remote data = [$data]")
-                        sendToGameServerQ.add(GameServer.ClientRequest(data, sendToThisHandlerQ))
+                        GameServer.queueClientHandlerRequest(data, sendToThisHandlerQ)
+//                        sendToGameServerQ.add(GameServer.ClientRequest(data, sendToThisHandlerQ))
                     }
                 }
             } catch (e: SocketException) {
