@@ -28,12 +28,12 @@ class SocketClient(private val server: String, private val port: Int, private va
         input = BufferedReader(InputStreamReader(clientSocket.getInputStream()));
 
         while (working.get()) {
-            // TODO - read the queue from the GameServer
-            var gameMessage = fromGameServerQ.poll()
+            var gameMessage = fromGameServerQ.poll()  // Gets a null if there was nothing to read...
 
+            // FIXME - rethink the treatment of null here...
             if (gameMessage != null && gameMessage == "shutdown") {
                 working.set(false)
-                output.println("exit:")  // This signals the remote server that we are disconnecting
+                output.println("shutdown")  // This signals the remote server that we are disconnecting
                 output.flush()
             } else {
                 if (gameMessage == null) {

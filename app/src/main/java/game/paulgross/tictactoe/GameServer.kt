@@ -68,17 +68,14 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
     private val allIpAddresses: MutableList<String> = mutableListOf()
 
     private fun determineIpAddresses() {
+        allIpAddresses.clear()
         val cm: ConnectivityManager = context.getSystemService(ConnectivityManager::class.java)
         val n = cm.activeNetwork
         val lp = cm.getLinkProperties(n)
         val addrs = lp?.linkAddresses
         Log.d(TAG, "IP Address List:")
         addrs?.forEach { addr ->
-            val currIpAddress = addr.address.hostAddress
-            Log.d(TAG, "IP Address: $currIpAddress")
-            Log.d(TAG, "IP Address valid format")
-            val thisIpAddress = currIpAddress
-            allIpAddresses.add(thisIpAddress)
+            allIpAddresses.add(addr.address.hostAddress)
         }
     }
 
@@ -92,6 +89,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         updateWinDisplay()
 
         while (working.get()) {
+            // TODO - create a special queue for requests from Activity classes.
             val request = gameRequestQ.poll()  // Non-blocking read for client requests.
             var requestString: String? = null
             var responseQ: Queue<String?>? = null
@@ -123,7 +121,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             if (gameMode == GameMode.SERVER || gameMode == GameMode.LOCAL) {
                 // TODO - clear at least a few client requests if there are many queued up.
                 if (requestString != null) {
-                    Log.d(TAG, "Received Request: [$requestString]")
+//                    Log.d(TAG, "Received Request: [$requestString]")
 
                     if (responseQ == null) {
                         // Local requests don't have a response Queue.
@@ -263,7 +261,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         }
         if (requestString == "exit:") {
             validRequest = true
-            responseQ?.add("exit:done")
+            responseQ?.add("shutdown")
             // TODO - allow other players to take over client's role ...
         }
 
@@ -358,7 +356,6 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
                 listAsString += addr
             }
         }
-        Log.d(TAG, "About to send IP Address List: [$listAsString] ...")
         val intent = Intent()
         intent.action = context.packageName + SettingsActivity.DISPLAY_MESSAGE_SUFFIX
         intent.putExtra("IpAddressList", listAsString)
