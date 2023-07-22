@@ -133,6 +133,7 @@ class MainActivity : AppCompatActivity() {
             return
         }
         GameServer.queueClientRequest("p:$gridIndex")
+        GameServer.queueActivityRequest("p:$gridIndex")
     }
 
     private fun displayCurrPlayer(player: String) {

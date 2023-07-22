@@ -20,6 +20,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
     private val working = AtomicBoolean(true)
 
     private val gameRequestQ: BlockingQueue<ClientRequest> = LinkedBlockingQueue()
+    private val fromActivitiesToGameSeverQ: BlockingQueue<String> = LinkedBlockingQueue()
     private val context: Context
     private val preferences: SharedPreferences
 
@@ -493,6 +494,12 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         fun queueClientRequest(request: String) {
             if (singletonGameServer?.working!!.get()) {
                 singletonGameServer?.gameRequestQ?.add(ClientRequest(request, null))
+            }
+        }
+
+        fun queueActivityRequest(request: String) {
+            if (singletonGameServer?.working!!.get()) {
+                singletonGameServer?.fromActivitiesToGameSeverQ?.add(request)
             }
         }
     }
