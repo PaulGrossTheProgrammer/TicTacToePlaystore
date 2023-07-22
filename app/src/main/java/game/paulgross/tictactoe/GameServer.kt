@@ -154,7 +154,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         return gameMode
     }
 
-    fun switchToRemoteServerMode(address: String) {
+    private fun switchToRemoteServerMode(address: String) {
         Log.d(TAG, "Switch to Remote Server at: $address")
         if (socketServer != null) {
             socketServer?.shutdown()
@@ -172,7 +172,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         gameMode = GameMode.CLIENT
     }
 
-    fun switchToLocalServerMode() {
+    private fun switchToLocalServerMode() {
         Log.d(TAG, "TODO: Switch to Local Server Mode.")
         if (socketClient != null) {
             socketClient?.shutdown()
@@ -182,12 +182,10 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         socketServer!!.start()
         determineIpAddresses()
 
-        // FIXME - don't WAIT here - it will hold the main thread.
-        // Instead, queue a request to change mode to enable main thread to proceed.
         gameMode = GameMode.SERVER
     }
 
-    fun switchToPureLocalMode() {
+    private fun switchToPureLocalMode() {
         Log.d(TAG, "TODO: Switch to Local Server Mode.")
         if (socketServer != null) {
             socketServer?.shutdown()
@@ -203,6 +201,8 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         gameMode = GameMode.LOCAL
     }
 
+    var previousStateUpdate = ""
+
     private fun handleClientRequest(requestString: String, responseQ: Queue<String?>?) {
         if (requestString.startsWith("p:")) {
             socketClient?.messageFromGameServer(requestString)
@@ -210,11 +210,16 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
         if (requestString.startsWith("s:", true)) {
             val remoteState = requestString.substringAfter("s:")
-            Log.d(TAG, "Decoding remote state [$remoteState] ...")
             decodeGrid(remoteState.substring(0, 9))
             // FIXME: Need current player as well
             currPlayer = SquareState.valueOf(remoteState[9].toString())
             winner = SquareState.valueOf(remoteState[10].toString())
+
+            if (previousStateUpdate != remoteState) {
+                previousStateUpdate = remoteState
+                Log.d(TAG, "Saving game stata.")
+                saveGameState()
+            }
 
             messageUIDisplayGrid()
         }
@@ -240,7 +245,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
     }
 
     private fun handleServerRequest(requestString: String, responseQ: Queue<String?>?) {
-        Log.d(TAG, "handleServerRequest: [$requestString]")
+//        Log.d(TAG, "handleServerRequest: [$requestString]")
 
         var validRequest = false
         if (requestString.startsWith("p:", true)) {
@@ -254,7 +259,6 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         }
         if (requestString == "status:") {
             validRequest = true
-            Log.d(TAG, "Handling status ...")
             responseQ?.add("s:${encodeGrid()}$currPlayer$winner")
         }
         if (requestString == "exit:") {
@@ -405,6 +409,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         }
         winner = SquareState.E
         currPlayer = SquareState.X
+        saveGameState()
     }
 
     private fun playSquare(gridIndex: Int) {

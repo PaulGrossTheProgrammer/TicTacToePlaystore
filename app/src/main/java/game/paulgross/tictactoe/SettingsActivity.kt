@@ -15,7 +15,7 @@ import androidx.appcompat.app.AlertDialog
 
 class SettingsActivity : AppCompatActivity() {
 
-    val periodicUpdateThread: PeriodicUpdater = PeriodicUpdater()
+    private val periodicUpdateThread: PeriodicUpdater = PeriodicUpdater()
 
     class PeriodicUpdater: Thread() {
 
@@ -110,12 +110,9 @@ class SettingsActivity : AppCompatActivity() {
      */
     private val gameMessageReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            Log.d(TAG, "Received broadcast message = [$intent]")
-
             val ipAddressList = intent.getStringExtra("IpAddressList")
 
             if (ipAddressList != null) {
-                Log.d(TAG, "Received IP Address = [$ipAddressList]")
                 // TODO - delete this simple textview
                 findViewById<TextView>(R.id.textViewIPAddress).text = ipAddressList
 

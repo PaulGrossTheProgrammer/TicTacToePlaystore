@@ -11,6 +11,7 @@ class SocketServer(private val gameRequestQ: BlockingQueue<GameServer.ClientRequ
 
     private lateinit var serverSocket: ServerSocket
     private val working = AtomicBoolean(true)
+    private val shutdownMode = AtomicBoolean(false)
     private val clientHandlers: MutableList<SocketClientHandler> = arrayListOf()
 
     override fun run() {
@@ -48,6 +49,9 @@ class SocketServer(private val gameRequestQ: BlockingQueue<GameServer.ClientRequ
     }
 
     fun shutdown() {
+        // FIXME - convert to a queued request...
+        // BUT - the thread usually can't shut itself down because it's blocked waiting on an open socket...!!!
+        // Maybe use a new shutdown thread waiting on a shutdown queue...
         Log.d(TAG, "The Socket Server is shutting down ...")
         working.set(false)
         serverSocket.close()
