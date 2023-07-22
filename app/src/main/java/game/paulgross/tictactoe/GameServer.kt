@@ -75,7 +75,6 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         val n = cm.activeNetwork
         val lp = cm.getLinkProperties(n)
         val addrs = lp?.linkAddresses
-        Log.d(TAG, "IP Address List:")
         addrs?.forEach { addr ->
             allIpAddresses.add(addr.address.hostAddress)
         }
@@ -84,7 +83,6 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
     override fun run() {
         // TODO: Move this IP Address code into function that listens to change of network state.
         determineIpAddresses()
-        Log.d(TAG, "IP Address List: $allIpAddresses")
 
         restoreGameState()
         messageUIDisplayGrid()
@@ -107,7 +105,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
                 handleClientMessage(clientMessage.requestString, clientMessage.responseQ)
             }
 
-            sleep(200L)  // Pause for a short time...
+            sleep(100L)  // Pause for a short time...
         }
         Log.d(TAG, "The Game Server has shut down.")
     }
@@ -135,7 +133,6 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
     }
 
     private fun switchToLocalServerMode() {
-        Log.d(TAG, "TODO: Switch to Local Server Mode.")
         if (socketClient != null) {
             socketClient?.shutdown()
         }
@@ -148,7 +145,6 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
     }
 
     private fun switchToPureLocalMode() {
-        Log.d(TAG, "TODO: Switch to Local Server Mode.")
         if (socketServer != null) {
             socketServer?.shutdown()
             allIpAddresses.clear()
@@ -166,61 +162,63 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
     var previousStateUpdate = ""
 
     private fun handleClientMessage(requestString: String, responseQ: Queue<String>) {
-        if (requestString.startsWith("p:")) {
-            socketClient?.messageFromGameServer(requestString)
-        }
-
         if (requestString.startsWith("s:", true)) {
             val remoteState = requestString.substringAfter("s:")
             decodeGrid(remoteState.substring(0, 9))
-            // FIXME: Need current player as well
             currPlayer = SquareState.valueOf(remoteState[9].toString())
             winner = SquareState.valueOf(remoteState[10].toString())
 
             if (previousStateUpdate != remoteState) {
                 previousStateUpdate = remoteState
-                Log.d(TAG, "Saving game stata.")
                 saveGameState()
+
+                val win = updateWinDisplay()
+                if (!win) {
+                    messageUIClearGridBackground()
+                }
             }
 
             messageUIDisplayGrid()
         }
     }
-    private fun handleActivityMessage(requestString: String) {
-        if (requestString == "reset:") {
+    private fun handleActivityMessage(message: String) {
+        if (message == "reset:") {
             resetGame()
             messageUIResetDisplay()
             messageUIDisplayGrid()
         }
-        if (requestString == "resume:") {
-            Log.d(TAG, "Handling LOCAL status ...")
+        if (message == "resume:") {
             restoreGameState()
             messageUIDisplayGrid()
             updateWinDisplay()
         }
-        if (requestString.startsWith("p:", true)) {
-            val indexString = requestString[2].toString()
-            val gridIndex = Integer.valueOf(indexString)
-            playSquare(gridIndex)
-            messageUIDisplayGrid()
+        if (message.startsWith("p:", true)) {
+            if (gameMode == GameMode.CLIENT) {
+                // ALSO Pass the message to the remote server
+                socketClient?.messageFromGameServer(message)
+            } else {
+                val indexString = message[2].toString()
+                val gridIndex = Integer.valueOf(indexString)
+                playSquare(gridIndex)
+                messageUIDisplayGrid()
+            }
         }
-        if (requestString == "UpdateSettings") {
+        if (message == "UpdateSettings") {
             messageSettingsDisplayIpAddress(allIpAddresses)
         }
-        if (requestString == "StartServer:") {
+        if (message == "StartServer:") {
             switchToLocalServerMode()
         }
-        if (requestString == "StartLocal:") {
+        if (message == "StartLocal:") {
             switchToPureLocalMode()
         }
-        if (requestString.startsWith("RemoteServer:")) {
-            Log.d(TAG, "TODO: Switch to remote mode [$requestString]")
-            val ip = requestString.substringAfter(":", "")
+        if (message.startsWith("RemoteServer:")) {
+            val ip = message.substringAfter(":", "")
             if (ip != "") {
                 switchToRemoteServerMode(ip)
             }
         }
-        if (requestString == "shutdown:") {
+        if (message == "shutdown:") {
             shutdown()
         }
     }
@@ -234,22 +232,22 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             val gridIndex = Integer.valueOf(indexString)
             playSquare(gridIndex)
 
-            responseQ?.add("s:${encodeGrid()}$currPlayer$winner")  // TODO: Change to encode status
+            responseQ.add("s:${encodeGrid()}$currPlayer$winner")  // TODO: Change to encode status
             messageUIDisplayGrid()
         }
         if (requestString == "status:") {
             validRequest = true
-            responseQ?.add("s:${encodeGrid()}$currPlayer$winner")
+            responseQ.add("s:${encodeGrid()}$currPlayer$winner")
         }
         if (requestString == "exit:") {
             validRequest = true
-            responseQ?.add("shutdown")
+            responseQ.add("shutdown")
             // TODO - allow other players to take over client's role ...
         }
 
         if (!validRequest) {
             Log.d(TAG, "invalid request: [$requestString]")
-            responseQ?.add("invalid:$requestString")
+            responseQ.add("invalid:$requestString")
         }
     }
 
@@ -327,12 +325,19 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         context.sendBroadcast(intent)
     }
 
+    private fun messageUIClearGridBackground() {
+        val intent = Intent()
+        intent.action = context.packageName + MainActivity.DISPLAY_MESSAGE_SUFFIX
+        intent.putExtra("ClearBackground", true)
+        context.sendBroadcast(intent)
+    }
+
     private fun messageSettingsDisplayIpAddress(addrList: List<String>) {
         var listAsString = "Server not running"
         if (gameMode == GameMode.SERVER) {
             listAsString = ""
             addrList.forEach { addr ->
-                if (!listAsString.isEmpty()) {
+                if (listAsString.isNotEmpty()) {
                     listAsString += ", "
                 }
                 listAsString += addr
@@ -347,7 +352,6 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         val intent = Intent()
         intent.action = context.packageName + MainActivity.DISPLAY_MESSAGE_SUFFIX
         val gs = encodeGrid()
-        Log.d(TAG, "About to send grid: [$gs]")
         intent.putExtra("grid", encodeGrid())
         intent.putExtra("player", currPlayer.toString())
         context.sendBroadcast(intent)
@@ -402,6 +406,11 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
         grid[gridIndex] = currPlayer
 
+        checkWinner()
+        saveGameState()
+    }
+
+    private fun checkWinner() {
         val hasWinner = updateWinDisplay()
         if (!hasWinner) {
             // Switch to next player
@@ -410,11 +419,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             } else {
                 SquareState.X
             }
-
-            Log.d(TAG, "Current Player = $currPlayer")
         }
-
-        saveGameState()
     }
 
     private fun updateWinDisplay(): Boolean {

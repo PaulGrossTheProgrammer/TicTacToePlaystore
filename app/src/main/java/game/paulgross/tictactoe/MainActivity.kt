@@ -99,9 +99,19 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun resetGridDisplay() {
+        clearGrid()
+        resetGridBackground()
+    }
+
+    private fun clearGrid() {
+        displaySquareList.forEach{ square ->
+            square?.text = ""
+        }
+    }
+
+    private fun resetGridBackground() {
         displaySquareList.forEach{ square ->
             square?.setBackgroundColor(colorOfReset!!)
-            square?.text = ""
         }
     }
 
@@ -132,7 +142,6 @@ class MainActivity : AppCompatActivity() {
             Log.d(TAG, "The user did NOT click a grid square.")
             return
         }
-//        GameServer.queueClientRequest("p:$gridIndex")
         GameServer.queueActivityRequest("p:$gridIndex")
     }
 
@@ -148,7 +157,6 @@ class MainActivity : AppCompatActivity() {
         builder.setTitle(getString(R.string.new_game_title_message))
         builder.setMessage(getString(R.string.new_game_confirm_message))
         builder.setPositiveButton(getString(R.string.new_button_message)) { _, _ ->
-//            GameServer.queueClientRequest("reset:")
             GameServer.queueActivityRequest("reset:")
         }
         builder.setNegativeButton(getString(R.string.go_back_message)) { _, _ -> }
@@ -200,9 +208,9 @@ class MainActivity : AppCompatActivity() {
      */
     private val gameMessageReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            Log.d(TAG, "Received broadcast message = [$intent]")
 
             val resetFlag = intent.getBooleanExtra("reset", false)
+            val clearBackgroundFlag = intent.getBooleanExtra("ClearBackground", false)
             val gridStateString = intent.getStringExtra("grid")
             val playerString = intent.getStringExtra("player")
             val winsquaresString = intent.getStringExtra("winsquares")
@@ -211,21 +219,19 @@ class MainActivity : AppCompatActivity() {
             if (resetFlag) {
                 resetGridDisplay()
             }
-
+            if (clearBackgroundFlag) {
+                resetGridBackground()
+            }
             if (gridStateString != null) {
-                Log.d(TAG, "Received current grid State = [$gridStateString]")
                 displayGrid(gridStateString)
             }
             if (playerString != null) {
-                Log.d(TAG, "Received current playerString = [$playerString]")
                 displayCurrPlayer(playerString)
             }
             if (winsquaresString != null) {
-                Log.d(TAG, "Received current winsquaresString = [$winsquaresString]")
                 displayVictory(winsquaresString)
             }
             if (winnerString != null) {
-                Log.d(TAG, "Received current winnerString = [$winnerString]")
                 toastWinner(winnerString)
             }
         }

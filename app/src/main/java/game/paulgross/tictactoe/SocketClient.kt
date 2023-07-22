@@ -41,25 +41,23 @@ class SocketClient(private val server: String, private val port: Int): Thread() 
                     // To avoid making the remote server too busy.
                     // But after a while give up waiting, and ask for a new status request anyway...?
                     gameMessage = "status:"
-                    Log.i(TAG, "About to send status request ...")
                 }
 
                 output.println(gameMessage)
                 output.flush()
 
-                // TODO - determine if this still works on a different thread...
-                Log.i(TAG, "About to get server response ...")
-                var response = input.readLine()
-                Log.i(TAG, "Server response [$response]")
                 // TODO - design for long responses that are split across multiple lines by the server.
-                // This is to avoid overrunning the TCPIP buffer.
-                // In this case, loop multiple readLine() calls here to assemble the entire response.
+                // TODO - determine if this still works on a different thread...
+                var response = input.readLine()  // null if socket unexpectedly closes.
 
-//            GameServer.queueClientRequest(GameServer.ClientRequest(response, clientQ))
                 // FIXME: If the server suddenly stops we get a null pointer exception here
-//                gameRequestQ.add(GameServer.ClientRequest(response, clientQ))
-                GameServer.queueClientRequest(response, clientQ)
-                sleep(200L)  // Pause for a short time...
+                if (response != null) {
+                    GameServer.queueClientRequest(response, clientQ)
+                } else {
+                    Log.e(TAG, "Server socket unexpectedly closed.")
+                    working.set(false)
+                }
+                sleep(100L)  // Pause for a short time...
             }
         }
 
