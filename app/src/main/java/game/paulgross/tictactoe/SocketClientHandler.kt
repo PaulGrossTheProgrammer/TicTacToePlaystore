@@ -50,7 +50,10 @@ class SocketClientHandler(private val socket: Socket, private val socketServer: 
                 }
             }
         } catch (e: SocketException) {
-
+            if (listeningToGameServer.get()) {
+                e.printStackTrace()
+                shutdown()
+            }
         }
 
         output.close()
@@ -59,12 +62,12 @@ class SocketClientHandler(private val socket: Socket, private val socketServer: 
     }
 
     private fun shutdown() {
+        socketServer.removeClientHandler(this)  // Can't the SocketServer do this by itself???
+
         listeningToSocket.set(false)
         listeningToGameServer.set(false)
         socket.close()
 
-        // Maybe do this with a static call?
-        socketServer.removeClientHandler(this)  // Can't the SocketServer do this by itself???
     }
 
     /**
