@@ -251,6 +251,10 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         }
     }
 
+    fun pushStateToClients(message: String) {
+        socketServer?.pushMessageToClients(message)
+    }
+
     fun pauseApp() {
         // TODO - pause App mode while the MainActivity is suspended or being updated.
     }
@@ -405,6 +409,11 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         }
 
         grid[gridIndex] = currPlayer
+
+        // TODO - in server mode PUSH to remote clients
+        if (gameMode == GameMode.SERVER) {
+            pushStateToClients("s:${encodeGrid()}$currPlayer$winner")
+        }
 
         checkWinner()
         saveGameState()
