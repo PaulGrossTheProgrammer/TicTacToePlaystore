@@ -14,12 +14,12 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 class SocketClient(private val server: String, private val port: Int): Thread() {
     private var clientSocket: Socket = Socket(server, port)
-    private val working = AtomicBoolean(true)
+//    private val working = AtomicBoolean(true)
 
     lateinit var output: PrintWriter
 //    lateinit var input: BufferedReader
 
-    private val clientQ: BlockingQueue<String> = LinkedBlockingQueue()
+//    private val clientQ: BlockingQueue<String> = LinkedBlockingQueue()
 
     private val fromGameServerQ: BlockingQueue<String> = LinkedBlockingQueue()
 
@@ -33,11 +33,19 @@ class SocketClient(private val server: String, private val port: Int): Thread() 
 
         SocketReaderThread(clientSocket, fromGameServerQ, listeningToSocket).start()
 
-        while (working.get()) {
+        while (listeningToGameServer.get()) {
             var gameMessage = fromGameServerQ.take()  // Blocked until we get data.
+
+            output.println(gameMessage)
+            output.flush()
+
+            if (gameMessage == "shutdown") {
+                shutdown()
+            }
 
             // FIXME - THIS IS LIKELY BROKEN PAST HERE...
             // FIXME - rethink the treatment of null here...
+/*
             if (gameMessage != null && gameMessage == "shutdown") {
                 working.set(false)
                 output.println("shutdown")  // This signals the remote server that we are disconnecting
@@ -53,6 +61,7 @@ class SocketClient(private val server: String, private val port: Int): Thread() 
 
                 output.println(gameMessage)
                 output.flush()
+*/
 
                 // TODO - design for long responses that are split across multiple lines by the server.
                 // TODO - determine if this still works on a different thread...
@@ -65,8 +74,7 @@ class SocketClient(private val server: String, private val port: Int): Thread() 
 //                    Log.e(TAG, "Server socket unexpectedly closed.")
 //                    working.set(false)
 //                }
-                sleep(5000L)  // Pause for a short time...
-            }
+//                sleep(5000L)  // Pause for a short time...
         }
 
         try {
@@ -84,7 +92,13 @@ class SocketClient(private val server: String, private val port: Int): Thread() 
     }
 
     fun shutdown() {
-        fromGameServerQ.add("shutdown")
+        listeningToSocket.set(false)
+        listeningToGameServer.set(false)
+        clientSocket.close()
+    }
+
+    fun shutdownRequest() {
+        fromGameServerQ?.add("shutdown")
     }
 
     private class SocketReaderThread(private val socket: Socket, private val sendToThisHandlerQ: BlockingQueue<String>,
@@ -100,11 +114,11 @@ class SocketClient(private val server: String, private val port: Int): Thread() 
                     if (data == null) {
                         Log.d(TAG, "ERROR: Remote data from Socket was unexpected NULL - abandoning socket Listener.")
                         listeningToSocket.set(false)
-                        GameServer.queueClientHandlerRequest("abandoned", sendToThisHandlerQ)
+                        GameServer.queueClientRequest("abandoned", sendToThisHandlerQ)
                     }
 
                     if (data != null) {
-                        GameServer.queueClientHandlerRequest(data, sendToThisHandlerQ)
+                        GameServer.queueClientRequest(data, sendToThisHandlerQ)
                     }
                 }
             } catch (e: SocketException) {

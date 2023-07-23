@@ -80,6 +80,9 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         }
     }
 
+    private val autoStatusCount = 50
+    private var autoStatusCountdown = 0
+
     override fun run() {
         // TODO: Move this IP Address code into function that listens to change of network state.
         determineIpAddresses()
@@ -103,6 +106,15 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             val clientMessage = fromClientToGameServerQ.poll()  // Non-blocking read.
             if (clientMessage != null) {
                 handleClientMessage(clientMessage.requestString, clientMessage.responseQ)
+            }
+
+            if (gameMode == GameMode.CLIENT) {
+                // Automatically request a new status after a delay
+                autoStatusCountdown--
+                if (autoStatusCountdown < 1) {
+                    autoStatusCountdown = autoStatusCount
+                    socketClient?.messageFromGameServer("status:")
+                }
             }
 
             sleep(100L)  // Pause for a short time...
@@ -159,11 +171,12 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         gameMode = GameMode.LOCAL
     }
 
-    var previousStateUpdate = ""
+    private var previousStateUpdate = ""
 
-    private fun handleClientMessage(requestString: String, responseQ: Queue<String>) {
-        if (requestString.startsWith("s:", true)) {
-            val remoteState = requestString.substringAfter("s:")
+    private fun handleClientMessage(message: String, responseQ: Queue<String>) {
+        if (message.startsWith("s:", true)) {
+            val remoteState = message.substringAfter("s:")
+            autoStatusCountdown = autoStatusCount  // Reset the auto-request countdown.
             decodeGrid(remoteState.substring(0, 9))
             currPlayer = SquareState.valueOf(remoteState[9].toString())
             winner = SquareState.valueOf(remoteState[10].toString())
@@ -177,8 +190,9 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
                     messageUIClearGridBackground()
                 }
             }
-
             messageUIDisplayGrid()
+        } else {
+
         }
     }
     private fun handleActivityMessage(message: String) {
@@ -247,7 +261,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
         if (!validRequest) {
             Log.d(TAG, "invalid request: [$requestString]")
-            responseQ.add("invalid:$requestString")
+//            responseQ.add("invalid:$requestString")
         }
     }
 
