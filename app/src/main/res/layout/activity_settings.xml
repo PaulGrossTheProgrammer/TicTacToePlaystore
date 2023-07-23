@@ -41,14 +41,15 @@
 
     <TextView
         android:id="@+id/textViewIPAddress"
-        android:layout_width="320dp"
-        android:layout_height="82dp"
+        android:layout_width="249dp"
+        android:layout_height="28dp"
+        android:layout_marginTop="16dp"
         android:text="IP Address"
+        android:textAlignment="center"
         android:textSize="16sp"
-        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.703"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/buttonLocal" />
 
     <TextView
         android:id="@+id/textViewTitle"
@@ -81,4 +82,23 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/textViewTitle" />
+
+    <ImageView
+        android:id="@+id/imageViewPrevIpAddress"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="onClickPrevAddress"
+        app:layout_constraintEnd_toStartOf="@+id/textViewIPAddress"
+        app:layout_constraintTop_toTopOf="@+id/textViewIPAddress"
+        app:srcCompat="@drawable/ic_left_arrow" />
+
+    <ImageView
+        android:id="@+id/imageViewNextIpAddress"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="onClickNextAddress"
+        app:layout_constraintStart_toEndOf="@+id/textViewIPAddress"
+        app:layout_constraintTop_toTopOf="@+id/textViewIPAddress"
+        app:srcCompat="@drawable/ic_right_arrow" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

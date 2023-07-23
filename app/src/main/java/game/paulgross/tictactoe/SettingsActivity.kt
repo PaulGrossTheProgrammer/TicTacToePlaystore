@@ -68,6 +68,38 @@ class SettingsActivity : AppCompatActivity() {
         GameServer.queueActivityRequest("StartServer:")
     }
 
+    fun onClickPrevAddress(view: View) {
+        if (allIpAddresses?.size!! < 2) {
+            return
+        }
+        val currAddress = findViewById<TextView>(R.id.textViewIPAddress).text
+
+        // determine current index
+        val index = allIpAddresses?.indexOf(currAddress)
+        if (index != null) {
+            if (index < 1) {
+                return
+            }
+            findViewById<TextView>(R.id.textViewIPAddress).text = allIpAddresses!![index - 1]
+        }
+    }
+
+    fun onClickNextAddress(view: View) {
+        if (allIpAddresses?.size!! < 2) {
+            return
+        }
+        val currAddress = findViewById<TextView>(R.id.textViewIPAddress).text
+
+        // determine current index
+        val index = allIpAddresses?.indexOf(currAddress)
+        if (index != null) {
+            if (index > allIpAddresses?.size!! - 2) {
+                return
+            }
+            findViewById<TextView>(R.id.textViewIPAddress).text = allIpAddresses!![index + 1]
+        }
+    }
+
     fun onClickJoinRemote(view: View) {
         val builder = AlertDialog.Builder(this)
         builder.setTitle("Remote Connect")
@@ -113,12 +145,14 @@ class SettingsActivity : AppCompatActivity() {
             val ipAddressList = intent.getStringExtra("IpAddressList")
 
             if (ipAddressList != null) {
-                // TODO - delete this simple textview
-                findViewById<TextView>(R.id.textViewIPAddress).text = ipAddressList
 
-                allIpAddresses = ipAddressList.split(",")
-                val primaryAddress = allIpAddresses?.get(allIpAddresses!!.lastIndex)
-                findViewById<TextView>(R.id.textViewAllIPpAddresses).text = primaryAddress
+                val newIpAddresses = ipAddressList.split(",")
+                if (newIpAddresses != allIpAddresses) {
+                    allIpAddresses = newIpAddresses
+                    val primaryAddress = allIpAddresses?.get(allIpAddresses!!.lastIndex)
+                    findViewById<TextView>(R.id.textViewAllIPpAddresses).text = primaryAddress
+                    findViewById<TextView>(R.id.textViewIPAddress).text = primaryAddress
+                }
             }
         }
     }
