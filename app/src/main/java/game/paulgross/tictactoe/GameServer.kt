@@ -239,9 +239,9 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             validRequest = true
             responseQ.add("s:${encodeGrid()}$currPlayer$winner")
         }
-        if (requestString == "exit:") {
+        if (requestString == "shutdown" || requestString == "abandoned") {
             validRequest = true
-            responseQ.add("shutdown")
+            responseQ.add(requestString)
             // TODO - allow other players to take over client's role ...
         }
 

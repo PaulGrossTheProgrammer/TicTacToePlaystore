@@ -27,20 +27,32 @@ class SocketClientHandler(private val socket: Socket, private val socketServer: 
         SocketReaderThread(socket, sendToThisHandlerQ, listeningToSocket).start()
 
         Log.d(TAG, "New client connection handler started ...")
-        while (listeningToGameServer.get()) {
-            // Wait here for any messages from the GameServer.
-            val message = sendToThisHandlerQ.take()  // Blocked until we get data.
 
-            // Pass on to the remote SocketClient
-            output.write(message)
-            output.write("\n")  // TODO: Maybe use a PrintWriter??
-            output.flush()
+        try {
+            while (listeningToGameServer.get()) {
+                // Wait here for any messages from the GameServer.
+                val message = sendToThisHandlerQ.take()  // Blocked until we get data.
 
-            // Special case: GameServer wants to shutdown this Handler.
-            if (message == "shutdown") {
-                shutdown()
+                // Special case: GameServer wants to shutdown this Handler.
+                if (message == "abandoned") {
+                    Log.d(TAG, "Remote socket abandoned. Shutting down.")
+                    shutdown()
+                } else {
+                    // Special case: GameServer wants to shutdown this Handler.
+                    if (message == "shutdown") {
+                        shutdown()
+                    }
+
+                    // Pass on to the remote SocketClient
+                    output.write(message)
+                    output.write("\n")  // TODO: Maybe use a PrintWriter??
+                    output.flush()
+                }
             }
+        } catch (e: SocketException) {
+
         }
+
         output.close()
 
         Log.d(TAG, "The Client Socket Writer has shut down.")
@@ -70,13 +82,15 @@ class SocketClientHandler(private val socket: Socket, private val socketServer: 
         override fun run() {
             try {
                 while (listeningToSocket.get()) {
-                    Log.d(TAG, "Waiting for client data ...")
                     val data = input.readLine()  // Blocked until we get a line of data.
-                    // TODO - determine if data == null when the remote socket closes...
+                    if (data == null) {
+                        Log.d(TAG, "ERROR: Remote data from Socket was unexpected NULL - abandoning socket reader.")
+                        listeningToSocket.set(false)
+                        GameServer.queueClientHandlerRequest("abandoned", sendToThisHandlerQ)
+                    }
+
                     if (data != null) {
-                        Log.d(TAG, "Got remote data = [$data]")
                         GameServer.queueClientHandlerRequest(data, sendToThisHandlerQ)
-//                        sendToGameServerQ.add(GameServer.ClientRequest(data, sendToThisHandlerQ))
                     }
                 }
             } catch (e: SocketException) {
