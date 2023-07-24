@@ -79,7 +79,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun stopGameServer() {
         Log.d(TAG, "Stopping the game server ...")
-        GameServer.queueActivityRequest("shutdown:")
+        GameServer.queueActivityRequest("StopGame")
     }
 
     /**

@@ -11,7 +11,6 @@ class SocketServer(private val gameRequestQ: BlockingQueue<GameServer.ClientRequ
 
     private lateinit var serverSocket: ServerSocket
     private val working = AtomicBoolean(true)
-    private val shutdownMode = AtomicBoolean(false)  // Use this to activate the shutdown process thread
     private val clientHandlers: MutableList<SocketClientHandler> = arrayListOf()
 
     override fun run() {

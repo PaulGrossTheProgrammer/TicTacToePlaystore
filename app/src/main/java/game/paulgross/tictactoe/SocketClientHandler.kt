@@ -5,6 +5,7 @@ import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.io.DataInputStream
 import java.io.DataOutputStream
+import java.io.IOException
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.net.Socket
@@ -35,13 +36,13 @@ class SocketClientHandler(private val socket: Socket, private val socketServer: 
                 val message = sendToThisHandlerQ.take()  // Blocked until we get data.
                 Log.d(TAG, "Got GameServer message.")
 
-                // Special case: GameServer wants to shutdown this Handler.
                 if (message == "abandoned") {
+                    // Special case: GameServer wants to shutdown this Handler.
                     Log.d(TAG, "Remote socket abandoned. Shutting down.")
                     shutdown()
                 } else {
-                    // Special case: GameServer wants to shutdown this Handler.
                     if (message == "shutdown") {
+                        // Special case: GameServer wants to shutdown this Handler.
                         shutdown()
                     }
 
@@ -56,11 +57,16 @@ class SocketClientHandler(private val socket: Socket, private val socketServer: 
             if (listeningToGameServer.get()) {
                 Log.d(TAG, "ERROR: Writing to Remote Socket caused unexpected error - abandoning socket.")
                 e.printStackTrace()
-                shutdown()
+            }
+        } catch (e: IOException) {
+            if (listeningToGameServer.get()) {
+                Log.d(TAG, "ERROR: Writing to Remote Socket caused unexpected error - abandoning socket.")
+                e.printStackTrace()
             }
         }
 
         output.close()
+        shutdown()
 
         Log.d(TAG, "The Writer has shut down.")
     }
@@ -88,9 +94,8 @@ class SocketClientHandler(private val socket: Socket, private val socketServer: 
     private class SocketReaderThread(private val socket: Socket, private val sendToThisHandlerQ: BlockingQueue<String>,
                                      private var listeningToSocket: AtomicBoolean): Thread() {
 
-        val input = BufferedReader(InputStreamReader(DataInputStream(socket.getInputStream())))
-
         override fun run() {
+            val input = BufferedReader(InputStreamReader(DataInputStream(socket.getInputStream())))
             try {
                 while (listeningToSocket.get()) {
                     val data = input.readLine()  // Blocked until we get a line of data.
@@ -98,19 +103,24 @@ class SocketClientHandler(private val socket: Socket, private val socketServer: 
                         Log.d(TAG, "ERROR: Remote data from Socket was unexpected NULL - abandoning socket Listener.")
                         listeningToSocket.set(false)
                         GameServer.queueClientHandlerRequest("abandoned", sendToThisHandlerQ)
-                    }
-
-                    if (data != null) {
+                    } else {
                         GameServer.queueClientHandlerRequest(data, sendToThisHandlerQ)
                     }
                 }
             } catch (e: SocketException) {
                 if (listeningToSocket.get()) {
-                    listeningToSocket.set(false)  // Unexpected Exception while listening
+                    listeningToSocket.set(false)
+                    Log.d(TAG, "ERROR: Reading from Remote Socket caused unexpected error - abandoning socket Listener.")
+                    e.printStackTrace()
+                }
+            } catch (e: IOException) {
+                if (listeningToSocket.get()) {
+                    listeningToSocket.set(false)
+                    Log.d(TAG, "ERROR: Reading from Remote Socket caused unexpected error - abandoning socket Listener.")
                     e.printStackTrace()
                 }
             }
-            // TODO - do I need IOException too???
+
             input.close()
             Log.d(TAG, "The Listener has shut down.")
         }

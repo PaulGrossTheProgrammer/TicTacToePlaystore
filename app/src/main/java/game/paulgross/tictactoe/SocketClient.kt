@@ -15,8 +15,6 @@ import java.util.concurrent.atomic.AtomicBoolean
 class SocketClient(private val server: String, private val port: Int): Thread() {
     private var clientSocket: Socket = Socket(server, port)
 
-    lateinit var output: PrintWriter
-
     private val fromGameServerQ: BlockingQueue<String> = LinkedBlockingQueue()
 
     private val listeningToGameServer = AtomicBoolean(true)
@@ -24,35 +22,40 @@ class SocketClient(private val server: String, private val port: Int): Thread() 
 
     override fun run() {
         Log.i(TAG, "Client connected...")
-        output = PrintWriter(clientSocket.getOutputStream());
+        var output = PrintWriter(clientSocket.getOutputStream());
 
         SocketReaderThread(clientSocket, fromGameServerQ, listeningToSocket).start()
 
-        while (listeningToGameServer.get()) {
-            var gameMessage = fromGameServerQ.take()  // Blocked until we get data.
-
-            if (gameMessage == "abandoned") {
-                Log.d(TAG, "Remote socket abandoned. Shutting down.")
-                shutdown()
-            } else {
-                if (gameMessage == "shutdown") {
-                    shutdown()
-                }
-                output.println(gameMessage)
-                output.flush()
-            }
-        }
-
-        // FIXME - I should catch socket exception here in case the output write fails...
-
         try {
-            if (clientSocket.isConnected) {
-                clientSocket.close()
+            while (listeningToGameServer.get()) {
+                var gameMessage = fromGameServerQ.take()  // Blocked until we get data.
+
+                if (gameMessage == "abandoned") {
+                    Log.d(TAG, "Remote socket abandoned. Shutting down.")
+                    shutdown()
+                } else {
+                    if (gameMessage == "shutdown") {
+                        shutdown()
+                    }
+                    output.println(gameMessage)
+                    output.flush()
+                }
+            }
+        } catch (e: SocketException) {
+            if (listeningToGameServer.get()) {
+                Log.d(TAG, "ERROR: Writing to Remote Socket caused unexpected error - abandoning socket.")
+                e.printStackTrace()
             }
         } catch (e: IOException) {
-            e.printStackTrace()
+            if (listeningToGameServer.get()) {
+                Log.d(TAG, "ERROR: Writing to Remote Socket caused unexpected error - abandoning socket.")
+                e.printStackTrace()
+            }
         }
-        Log.i(TAG, "SocketClient has shut down.")
+
+        output.close()
+        shutdown()
+        Log.i(TAG, "The Writer has shut down.")
     }
 
     fun messageFromGameServer(message: String) {
@@ -72,9 +75,8 @@ class SocketClient(private val server: String, private val port: Int): Thread() 
     private class SocketReaderThread(private val socket: Socket, private val sendToThisHandlerQ: BlockingQueue<String>,
                                      private var listeningToSocket: AtomicBoolean): Thread() {
 
-        val input = BufferedReader(InputStreamReader(DataInputStream(socket.getInputStream())))
-
         override fun run() {
+            val input = BufferedReader(InputStreamReader(DataInputStream(socket.getInputStream())))
             try {
                 while (listeningToSocket.get()) {
                     // TODO - design for long responses that are split across multiple lines by the server.
@@ -94,8 +96,13 @@ class SocketClient(private val server: String, private val port: Int): Thread() 
                     listeningToSocket.set(false)  // Unexpected Exception while listening
                     e.printStackTrace()
                 }
+            } catch (e: IOException) {
+                if (listeningToSocket.get()) {
+                    listeningToSocket.set(false)  // Unexpected Exception while listening
+                    e.printStackTrace()
+                }
             }
-            // TODO - do I need IOException too???
+
             input.close()
             Log.d(TAG, "The Listener has shut down.")
         }

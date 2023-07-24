@@ -135,6 +135,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         if (socketServer != null) {
             socketServer?.shutdown()
             allIpAddresses.clear()
+            socketServer = null
         }
 
         try {
@@ -151,6 +152,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
     private fun switchToLocalServerMode() {
         if (socketClient != null) {
             socketClient?.shutdownRequest()
+            socketClient = null
         }
 
         socketServer = SocketServer(fromClientHandlerToGameServerQ)
@@ -164,10 +166,12 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         if (socketServer != null) {
             socketServer?.shutdown()
             allIpAddresses.clear()
+            socketServer = null
         }
 
         if (socketClient != null) {
             socketClient?.shutdownRequest()
+            socketClient = null
         }
 
         // FIXME - don't WAIT here - it will hold the main thread.
@@ -198,7 +202,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         }
         if (message == "shutdown" || message == "abandoned") {
             responseQ.add(message)
-            // TODO - allow other players to take over client's role ...
+            switchToPureLocalMode()
         }
     }
     private fun handleActivityMessage(message: String) {
@@ -214,7 +218,6 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         }
         if (message.startsWith("p:", true)) {
             if (gameMode == GameMode.CLIENT) {
-                // ALSO Pass the message to the remote server
                 socketClient?.messageFromGameServer(message)
             } else {
                 val indexString = message[2].toString()
@@ -238,8 +241,8 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
                 switchToRemoteServerMode(ip)
             }
         }
-        if (message == "shutdown:") {
-            shutdown()
+        if (message == "StopGame") {
+            stopGame()
         }
     }
 
@@ -267,7 +270,6 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
         if (!validRequest) {
             Log.d(TAG, "invalid request: [$requestString]")
-//            responseQ.add("invalid:$requestString")
         }
     }
 
@@ -291,7 +293,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         // TODO - resume game
     }
 
-    fun shutdown() {
+    private fun stopGame() {
         Log.d(TAG, "The Game Server is shutting down ...")
         gameIsRunning.set(false)
 
@@ -300,10 +302,9 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         }
 
         if (gameMode == GameMode.CLIENT) {
-            socketServer?.shutdown()
+            socketClient?.shutdownRequest()
         }
 
-        // TODO - shut down client when in CLIENT mode.
         singletonGameServer = null
     }
 
