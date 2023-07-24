@@ -14,12 +14,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 class SocketClient(private val server: String, private val port: Int): Thread() {
     private var clientSocket: Socket = Socket(server, port)
-//    private val working = AtomicBoolean(true)
 
     lateinit var output: PrintWriter
-//    lateinit var input: BufferedReader
-
-//    private val clientQ: BlockingQueue<String> = LinkedBlockingQueue()
 
     private val fromGameServerQ: BlockingQueue<String> = LinkedBlockingQueue()
 
@@ -29,52 +25,22 @@ class SocketClient(private val server: String, private val port: Int): Thread() 
     override fun run() {
         Log.i(TAG, "Client connected...")
         output = PrintWriter(clientSocket.getOutputStream());
-        // input = BufferedReader(InputStreamReader(clientSocket.getInputStream()));
 
         SocketReaderThread(clientSocket, fromGameServerQ, listeningToSocket).start()
 
         while (listeningToGameServer.get()) {
             var gameMessage = fromGameServerQ.take()  // Blocked until we get data.
 
-            output.println(gameMessage)
-            output.flush()
-
-            if (gameMessage == "shutdown") {
+            if (gameMessage == "abandoned") {
+                Log.d(TAG, "Remote socket abandoned. Shutting down.")
                 shutdown()
-            }
-
-            // FIXME - THIS IS LIKELY BROKEN PAST HERE...
-            // FIXME - rethink the treatment of null here...
-/*
-            if (gameMessage != null && gameMessage == "shutdown") {
-                working.set(false)
-                output.println("shutdown")  // This signals the remote server that we are disconnecting
-                output.flush()
             } else {
-                if (gameMessage == null) {
-                    // TODO - don't overdo these status requests. Flag if we are waiting from the prev status.
-                    // Maybe don't make status requests if there is still no response from the last request.
-                    // To avoid making the remote server too busy.
-                    // But after a while give up waiting, and ask for a new status request anyway...?
-                    gameMessage = "status:"
+                if (gameMessage == "shutdown") {
+                    shutdown()
                 }
-
                 output.println(gameMessage)
                 output.flush()
-*/
-
-                // TODO - design for long responses that are split across multiple lines by the server.
-                // TODO - determine if this still works on a different thread...
-//                var response = input.readLine()  // null if socket unexpectedly closes.
-//
-//                // FIXME: If the server suddenly stops we get a null pointer exception here
-//                if (response != null) {
-//                    GameServer.queueClientRequest(response, clientQ)
-//                } else {
-//                    Log.e(TAG, "Server socket unexpectedly closed.")
-//                    working.set(false)
-//                }
-//                sleep(5000L)  // Pause for a short time...
+            }
         }
 
         try {

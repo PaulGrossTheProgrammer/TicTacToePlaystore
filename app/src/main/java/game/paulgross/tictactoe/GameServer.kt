@@ -17,7 +17,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
     private var socketServer: SocketServer? = null
     private var socketClient: SocketClient? = null
 
-    private val working = AtomicBoolean(true)
+    private val gameIsRunning = AtomicBoolean(true)
 
     private val fromClientHandlerToGameServerQ: BlockingQueue<ClientRequest> = LinkedBlockingQueue()
     private val fromClientToGameServerQ: BlockingQueue<ClientRequest> = LinkedBlockingQueue()
@@ -80,8 +80,10 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         }
     }
 
-    private val autoStatusCount = 50
-    private var autoStatusCountdown = 0
+    private val loopDelayMilliseconds = 25L
+    private val autoStatusDelayMilliseconds = 5000L
+    private val autoStatusCount = autoStatusDelayMilliseconds.div(loopDelayMilliseconds)
+    private var autoStatusCountdown = 0L
 
     override fun run() {
         // TODO: Move this IP Address code into function that listens to change of network state.
@@ -91,7 +93,9 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         messageUIDisplayGrid()
         updateWinDisplay()
 
-        while (working.get()) {
+        Log.d(TAG, "DELETEME: autoStatusCount = $autoStatusCount")
+
+        while (gameIsRunning.get()) {
             val activityRequest = fromActivitiesToGameSeverQ.poll()  // Non-blocking read.
             if (activityRequest != null) {
                 handleActivityMessage(activityRequest)
@@ -117,7 +121,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
                 }
             }
 
-            sleep(100L)  // Pause for a short time...
+            sleep(loopDelayMilliseconds)  // Pause for a short time...
         }
         Log.d(TAG, "The Game Server has shut down.")
     }
@@ -146,7 +150,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
     private fun switchToLocalServerMode() {
         if (socketClient != null) {
-            socketClient?.shutdown()
+            socketClient?.shutdownRequest()
         }
 
         socketServer = SocketServer(fromClientHandlerToGameServerQ)
@@ -163,7 +167,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         }
 
         if (socketClient != null) {
-            socketClient?.shutdown()
+            socketClient?.shutdownRequest()
         }
 
         // FIXME - don't WAIT here - it will hold the main thread.
@@ -191,8 +195,10 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
                 }
             }
             messageUIDisplayGrid()
-        } else {
-
+        }
+        if (message == "shutdown" || message == "abandoned") {
+            responseQ.add(message)
+            // TODO - allow other players to take over client's role ...
         }
     }
     private fun handleActivityMessage(message: String) {
@@ -265,8 +271,8 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         }
     }
 
-    fun pushStateToClients(message: String) {
-        socketServer?.pushMessageToClients(message)
+    private fun pushStateToClients() {
+        socketServer?.pushMessageToClients("s:${encodeGrid()}$currPlayer$winner")
     }
 
     fun pauseApp() {
@@ -287,7 +293,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
     fun shutdown() {
         Log.d(TAG, "The Game Server is shutting down ...")
-        working.set(false)
+        gameIsRunning.set(false)
 
         if (gameMode == GameMode.SERVER) {
             socketServer?.shutdown()
@@ -411,6 +417,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         winner = SquareState.E
         currPlayer = SquareState.X
         saveGameState()
+        pushStateToClients()
     }
 
     private fun playSquare(gridIndex: Int) {
@@ -426,7 +433,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
         // TODO - in server mode PUSH to remote clients
         if (gameMode == GameMode.SERVER) {
-            pushStateToClients("s:${encodeGrid()}$currPlayer$winner")
+            pushStateToClients()
         }
 
         checkWinner()
@@ -501,19 +508,19 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         }
 
         fun queueActivityRequest(request: String) {
-            if (singletonGameServer?.working!!.get()) {
+            if (singletonGameServer?.gameIsRunning!!.get()) {
                 singletonGameServer?.fromActivitiesToGameSeverQ?.add(request)
             }
         }
 
         fun queueClientHandlerRequest(request: String, responseQ: Queue<String>) {
-            if (singletonGameServer?.working!!.get()) {
+            if (singletonGameServer?.gameIsRunning!!.get()) {
                 singletonGameServer?.fromClientHandlerToGameServerQ?.add(ClientRequest(request, responseQ))
             }
         }
 
         fun queueClientRequest(request: String, responseQ: Queue<String>) {
-            if (singletonGameServer?.working!!.get()) {
+            if (singletonGameServer?.gameIsRunning!!.get()) {
                 singletonGameServer?.fromClientToGameServerQ?.add(ClientRequest(request, responseQ))
             }
         }

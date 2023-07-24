@@ -82,7 +82,7 @@ class SocketClientHandler(private val socket: Socket, private val socketServer: 
     // This function is only called by the SocketServer Thread.
     */
     fun shutdownRequest() {
-        sendToThisHandlerQ?.add("shutdown")
+        sendToThisHandlerQ.add("shutdown")
     }
 
     private class SocketReaderThread(private val socket: Socket, private val sendToThisHandlerQ: BlockingQueue<String>,
