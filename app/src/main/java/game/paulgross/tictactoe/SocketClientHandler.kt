@@ -20,7 +20,7 @@ class SocketClientHandler(private val socket: Socket, private val socketServer: 
     private val sendToThisHandlerQ: BlockingQueue<String> = LinkedBlockingQueue()
 
     private val listeningToGameServer = AtomicBoolean(true)
-    private var listeningToSocket = AtomicBoolean(true)
+    private val listeningToSocket = AtomicBoolean(true)
 
     override fun run() {
         val output = BufferedWriter(OutputStreamWriter(DataOutputStream(socket.getOutputStream())))

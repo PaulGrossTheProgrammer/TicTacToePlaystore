@@ -13,22 +13,22 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.atomic.AtomicBoolean
 
 class SocketClient(private val server: String, private val port: Int): Thread() {
-    private var clientSocket: Socket = Socket(server, port)
+    private val clientSocket: Socket = Socket(server, port)
 
     private val fromGameServerQ: BlockingQueue<String> = LinkedBlockingQueue()
 
     private val listeningToGameServer = AtomicBoolean(true)
-    private var listeningToSocket = AtomicBoolean(true)
+    private val listeningToSocket = AtomicBoolean(true)
 
     override fun run() {
         Log.i(TAG, "Client connected...")
-        var output = PrintWriter(clientSocket.getOutputStream());
+        val output = PrintWriter(clientSocket.getOutputStream());
 
         SocketReaderThread(clientSocket, fromGameServerQ, listeningToSocket).start()
 
         try {
             while (listeningToGameServer.get()) {
-                var gameMessage = fromGameServerQ.take()  // Blocked until we get data.
+                val gameMessage = fromGameServerQ.take()  // Blocked until we get data.
 
                 if (gameMessage == "abandoned") {
                     Log.d(TAG, "Remote socket abandoned. Shutting down.")
@@ -69,7 +69,7 @@ class SocketClient(private val server: String, private val port: Int): Thread() 
     }
 
     fun shutdownRequest() {
-        fromGameServerQ?.add("shutdown")
+        fromGameServerQ.add("shutdown")
     }
 
     private class SocketReaderThread(private val socket: Socket, private val sendToThisHandlerQ: BlockingQueue<String>,

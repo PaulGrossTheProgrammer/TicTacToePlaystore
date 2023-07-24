@@ -150,6 +150,7 @@ class SettingsActivity : AppCompatActivity() {
                 if (newIpAddresses != allIpAddresses) {
                     allIpAddresses = newIpAddresses
                     val primaryAddress = allIpAddresses?.get(allIpAddresses!!.lastIndex)
+                    // TODO - just one text field is needed here...
                     findViewById<TextView>(R.id.textViewAllIPpAddresses).text = primaryAddress
                     findViewById<TextView>(R.id.textViewIPAddress).text = primaryAddress
                 }
