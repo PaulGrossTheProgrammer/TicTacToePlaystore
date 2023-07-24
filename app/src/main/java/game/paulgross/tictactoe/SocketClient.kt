@@ -43,6 +43,8 @@ class SocketClient(private val server: String, private val port: Int): Thread() 
             }
         }
 
+        // FIXME - I should catch socket exception here in case the output write fails...
+
         try {
             if (clientSocket.isConnected) {
                 clientSocket.close()
@@ -57,7 +59,7 @@ class SocketClient(private val server: String, private val port: Int): Thread() 
         fromGameServerQ.add(message)
     }
 
-    fun shutdown() {
+    private fun shutdown() {
         listeningToSocket.set(false)
         listeningToGameServer.set(false)
         clientSocket.close()
