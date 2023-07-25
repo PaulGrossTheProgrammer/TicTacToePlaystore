@@ -313,6 +313,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
      * MUST BE called from overridden onPause() to avoid accidental state loss.
      */
     private fun saveGameState() {
+        // FIXME - there seems to be some redundant calls to this function.
         val editor = preferences.edit()
 
         // Save the grid state.

@@ -40,9 +40,9 @@ class GameplayActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
-            setContentView(R.layout.activity_main)
+            setContentView(R.layout.activity_gameplay)
         } else {
-            setContentView(R.layout.activity_main_landscape)
+            setContentView(R.layout.activity_gameplay_landscape)
         }
 
         // Add all the display squares into the list.
