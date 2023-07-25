@@ -13,12 +13,12 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 
-class MainActivity : AppCompatActivity() {
+class GameplayActivity : AppCompatActivity() {
 
     private var displaySquareList: MutableList<TextView?> = mutableListOf()
     private var textPlayerView: TextView? = null
 
-    private var colorOfWinning: Int? = null
+    private var colorOfWin: Int? = null
     private var colorOfReset: Int? = null
 
     override fun onPause() {
@@ -58,7 +58,7 @@ class MainActivity : AppCompatActivity() {
         displaySquareList.add(findViewById(R.id.textSquare9))
 
         colorOfReset = getColor(R.color.green_pastel)
-        colorOfWinning = getColor(R.color.orange_pastel)
+        colorOfWin = getColor(R.color.orange_pastel)
 
         textPlayerView = findViewById(R.id.textPlayer)
 
@@ -128,9 +128,9 @@ class MainActivity : AppCompatActivity() {
         val s2 = Integer.parseInt(winSquares[1].toString())
         val s3 = Integer.parseInt(winSquares[2].toString())
 
-        displaySquareList[s1]?.setBackgroundColor(colorOfWinning!!)
-        displaySquareList[s2]?.setBackgroundColor(colorOfWinning!!)
-        displaySquareList[s3]?.setBackgroundColor(colorOfWinning!!)
+        displaySquareList[s1]?.setBackgroundColor(colorOfWin!!)
+        displaySquareList[s2]?.setBackgroundColor(colorOfWin!!)
+        displaySquareList[s3]?.setBackgroundColor(colorOfWin!!)
     }
 
     /**
@@ -238,7 +238,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     companion object {
-        private val TAG = MainActivity::class.java.simpleName
+        private val TAG = GameplayActivity::class.java.simpleName
         val DISPLAY_MESSAGE_SUFFIX = ".$TAG.display.UPDATE"
     }
 }

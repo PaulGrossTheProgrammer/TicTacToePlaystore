@@ -133,7 +133,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
     private fun switchToRemoteServerMode(address: String) {
         Log.d(TAG, "Switch to Remote Server at: $address")
         if (socketServer != null) {
-            socketServer?.shutdown()
+            socketServer?.shutdownRequest()
             allIpAddresses.clear()
             socketServer = null
         }
@@ -164,7 +164,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
     private fun switchToPureLocalMode() {
         if (socketServer != null) {
-            socketServer?.shutdown()
+            socketServer?.shutdownRequest()
             allIpAddresses.clear()
             socketServer = null
         }
@@ -174,8 +174,6 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             socketClient = null
         }
 
-        // FIXME - don't WAIT here - it will hold the main thread.
-        // Instead, queue a request to change mode to enable main thread to proceed.
         gameMode = GameMode.LOCAL
     }
 
@@ -228,6 +226,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         }
         if (message == "UpdateSettings") {
             messageSettingsDisplayIpAddress(allIpAddresses)
+            messageSettingsDisplayMode(gameMode.toString())
         }
         if (message == "StartServer:") {
             switchToLocalServerMode()
@@ -298,7 +297,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         gameIsRunning.set(false)
 
         if (gameMode == GameMode.SERVER) {
-            socketServer?.shutdown()
+            socketServer?.shutdownRequest()
         }
 
         if (gameMode == GameMode.CLIENT) {
@@ -343,17 +342,10 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         currPlayer = SquareState.valueOf(preferences.getString("CurrPlayer", "X").toString())
     }
 
-    private fun messageUIResetDisplay() {
+    private fun messageSettingsDisplayMode(mode: String) {
         val intent = Intent()
-        intent.action = context.packageName + MainActivity.DISPLAY_MESSAGE_SUFFIX
-        intent.putExtra("reset", true)
-        context.sendBroadcast(intent)
-    }
-
-    private fun messageUIClearGridBackground() {
-        val intent = Intent()
-        intent.action = context.packageName + MainActivity.DISPLAY_MESSAGE_SUFFIX
-        intent.putExtra("ClearBackground", true)
+        intent.action = context.packageName + SettingsActivity.DISPLAY_MESSAGE_SUFFIX
+        intent.putExtra("CurrMode", mode)
         context.sendBroadcast(intent)
     }
 
@@ -373,9 +365,23 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         intent.putExtra("IpAddressList", listAsString)
         context.sendBroadcast(intent)
     }
+
+    private fun messageUIResetDisplay() {
+        val intent = Intent()
+        intent.action = context.packageName + GameplayActivity.DISPLAY_MESSAGE_SUFFIX
+        intent.putExtra("reset", true)
+        context.sendBroadcast(intent)
+    }
+
+    private fun messageUIClearGridBackground() {
+        val intent = Intent()
+        intent.action = context.packageName + GameplayActivity.DISPLAY_MESSAGE_SUFFIX
+        intent.putExtra("ClearBackground", true)
+        context.sendBroadcast(intent)
+    }
     private fun messageUIDisplayGrid() {
         val intent = Intent()
-        intent.action = context.packageName + MainActivity.DISPLAY_MESSAGE_SUFFIX
+        intent.action = context.packageName + GameplayActivity.DISPLAY_MESSAGE_SUFFIX
         val gs = encodeGrid()
         intent.putExtra("grid", encodeGrid())
         intent.putExtra("player", currPlayer.toString())
@@ -384,7 +390,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
     private fun messageUIDisplayVictory(winSquares: List<Int>) {
         val intent = Intent()
-        intent.action = context.packageName + MainActivity.DISPLAY_MESSAGE_SUFFIX
+        intent.action = context.packageName + GameplayActivity.DISPLAY_MESSAGE_SUFFIX
         val squares = winSquares[0].toString() + winSquares[1].toString() + winSquares[2].toString()
         intent.putExtra("winsquares", squares)
         context.sendBroadcast(intent)
@@ -392,7 +398,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
     private fun messageUIDisplayWinner(winner: String) {
         val intent = Intent()
-        intent.action = context.packageName + MainActivity.DISPLAY_MESSAGE_SUFFIX
+        intent.action = context.packageName + GameplayActivity.DISPLAY_MESSAGE_SUFFIX
         intent.putExtra("winner", winner)
         context.sendBroadcast(intent)
     }

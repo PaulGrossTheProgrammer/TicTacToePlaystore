@@ -22,7 +22,7 @@
             android:label="@string/title_activity_settings"
             android:theme="@style/Theme.TicTacToePlaystore" />
         <activity
-            android:name=".MainActivity"
+            android:name=".GameplayActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

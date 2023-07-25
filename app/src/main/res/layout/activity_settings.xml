@@ -81,7 +81,7 @@
         android:text="Server Not Running"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textViewTitle" />
+        app:layout_constraintTop_toBottomOf="@+id/textViewCurrentMode" />
 
     <ImageView
         android:id="@+id/imageViewPrevIpAddress"
@@ -100,5 +100,26 @@
         app:layout_constraintStart_toEndOf="@+id/textViewIPAddress"
         app:layout_constraintTop_toTopOf="@+id/textViewIPAddress"
         app:srcCompat="@drawable/ic_right_arrow" />
+
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:text="Mode"
+        android:textSize="20sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/textViewCurrentMode" />
+
+    <TextView
+        android:id="@+id/textViewCurrentMode"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="32dp"
+        android:text="TextView"
+        android:textSize="20sp"
+        app:layout_constraintStart_toEndOf="@+id/textView"
+        app:layout_constraintTop_toBottomOf="@+id/textViewTitle" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

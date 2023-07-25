@@ -53,11 +53,7 @@ class SocketServer(private val gameRequestQ: BlockingQueue<GameServer.ClientRequ
         }
     }
 
-    fun shutdown() {
-        // FIXME: Remote Client crashes when still connected and this server is shut down.
-        // FIXME: convert to a queued request...
-        // BUT - the thread usually can't shut itself down because it's blocked waiting on an open socket...!!!
-        // Maybe use a new shutdown thread waiting on a shutdown queue...
+    fun shutdownRequest() {
         Log.d(TAG, "The Socket Server is shutting down ...")
         working.set(false)
         serverSocket.close()

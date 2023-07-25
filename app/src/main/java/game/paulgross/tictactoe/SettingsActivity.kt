@@ -54,7 +54,7 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     fun onClickBack(view: View) {
-        val intent: Intent = Intent(this, MainActivity::class.java)
+        val intent: Intent = Intent(this, GameplayActivity::class.java)
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
         startActivity(intent)
@@ -143,7 +143,11 @@ class SettingsActivity : AppCompatActivity() {
     private val gameMessageReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             val ipAddressList = intent.getStringExtra("IpAddressList")
+            val currMode = intent.getStringExtra("CurrMode")
 
+            if (currMode != null) {
+                findViewById<TextView>(R.id.textViewCurrentMode).text = currMode
+            }
             if (ipAddressList != null) {
 
                 val newIpAddresses = ipAddressList.split(",")
