@@ -17,6 +17,7 @@ class GameplayActivity : AppCompatActivity() {
 
     private var displaySquareList: MutableList<TextView?> = mutableListOf()
     private var textPlayerView: TextView? = null
+    private var textStatusView: TextView? = null
 
     private var colorOfWin: Int? = null
     private var colorOfReset: Int? = null
@@ -61,6 +62,7 @@ class GameplayActivity : AppCompatActivity() {
         colorOfWin = getColor(R.color.orange_pastel)
 
         textPlayerView = findViewById(R.id.textPlayer)
+        textStatusView = findViewById(R.id.textViewPlayStatus)
 
         enableMessagesFromGameServer()
 
@@ -150,6 +152,10 @@ class GameplayActivity : AppCompatActivity() {
             String.format(getString(R.string.curr_player_message), player)
     }
 
+    private fun displayStatusMessage(status: String) {
+        textStatusView?.text = status
+    }
+
     fun onClickNewGame(view: View) {
         // Ask user to confirm new game
         // FIXME: The buttons on the AlertDialog have different colours to the layout.
@@ -215,9 +221,13 @@ class GameplayActivity : AppCompatActivity() {
             val playerString = intent.getStringExtra("player")
             val winsquaresString = intent.getStringExtra("winsquares")
             val winnerString = intent.getStringExtra("winner")
+            val statusMessage = intent.getStringExtra("Status")
 
             if (resetFlag) {
                 resetGridDisplay()
+            }
+            if (statusMessage != null) {
+                displayStatusMessage(statusMessage)
             }
             if (clearBackgroundFlag) {
                 resetGridBackground()

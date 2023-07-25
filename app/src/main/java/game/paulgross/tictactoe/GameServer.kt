@@ -248,13 +248,13 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
                     messageUIClearGridBackground()
                 }
             }
-            if (message.startsWith("Player=", true)) {
-                val allocatedPlayer = SquareState.valueOf(message.substringAfter("Player="))
-                clientPlayer = allocatedPlayer
-                Log.d(TAG, "Remote Game Server allocated [$clientPlayer] to this client.")
-            }
 
             messageUIDisplayGrid()
+        }
+        if (message.startsWith("Player=", true)) {
+            val allocatedPlayer = SquareState.valueOf(message.substringAfter("Player="))
+            clientPlayer = allocatedPlayer
+            Log.d(TAG, "Remote Game Server allocated [$clientPlayer] to this client.")
         }
         if (message == "shutdown" || message == "abandoned") {
             responseQ.add(message)
@@ -444,12 +444,33 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         intent.putExtra("ClearBackground", true)
         context.sendBroadcast(intent)
     }
+
+    // TODO - rename to display update all.
     private fun messageUIDisplayGrid() {
         val intent = Intent()
         intent.action = context.packageName + GameplayActivity.DISPLAY_MESSAGE_SUFFIX
         val gs = encodeGrid()
         intent.putExtra("grid", encodeGrid())
         intent.putExtra("player", currPlayer.toString())
+        var statusMessage = "TODO"
+        if (gameMode == GameMode.LOCAL) {
+            statusMessage = "Current PLayer:"
+        }
+        if (gameMode == GameMode.CLIENT ) {
+            if (currPlayer == clientPlayer) {
+                statusMessage = "Your Turn:"
+            } else {
+                statusMessage = "Waiting for:"
+            }
+        }
+        if (gameMode == GameMode.SERVER) {
+            if (players.containsValue(currPlayer)) {
+                statusMessage = "Waiting for:"
+            } else {
+                statusMessage = "Your Turn:"
+            }
+        }
+        intent.putExtra("Status", statusMessage)
         context.sendBroadcast(intent)
     }
 

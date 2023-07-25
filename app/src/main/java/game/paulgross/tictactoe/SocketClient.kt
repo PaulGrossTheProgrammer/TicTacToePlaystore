@@ -32,6 +32,7 @@ class SocketClient(private val server: String, private val port: Int): Thread() 
         try {
             while (listeningToGameServer.get()) {
                 val gameMessage = fromGameServerQ.take()  // Blocked until we get data.
+                Log.d(TAG, "From LOCAL game server: [$gameMessage]")
 
                 if (gameMessage == "abandoned") {
                     Log.d(TAG, "Remote socket abandoned. Shutting down.")
@@ -95,6 +96,7 @@ class SocketClient(private val server: String, private val port: Int): Thread() 
                     }
 
                     if (data != null) {
+                        Log.d(TAG, "From REMOTE game server: [$data]")
                         GameServer.queueClientRequest(data, sendToThisHandlerQ)
                     }
                 }
