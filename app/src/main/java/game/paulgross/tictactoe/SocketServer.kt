@@ -47,6 +47,10 @@ class SocketServer(private val gameRequestQ: BlockingQueue<GameServer.ClientRequ
         Log.d(TAG, "The Socket Server has shut down.")
     }
 
+    fun countOfClients(): Int {
+        return clientHandlers.size
+    }
+
     fun pushMessageToClients(message: String) {
         clientHandlers.forEach {handler ->
             handler.queueMessage(message)

@@ -24,6 +24,9 @@ class SocketClient(private val server: String, private val port: Int): Thread() 
         Log.i(TAG, "Client connected...")
         val output = PrintWriter(clientSocket.getOutputStream());
 
+        output.println("Initialise")
+        output.flush()
+
         SocketReaderThread(clientSocket, fromGameServerQ, listeningToSocket).start()
 
         try {
@@ -56,6 +59,10 @@ class SocketClient(private val server: String, private val port: Int): Thread() 
         output.close()
         shutdown()
         Log.i(TAG, "The Writer has shut down.")
+    }
+
+    fun getServer(): String {
+        return server
     }
 
     fun messageFromGameServer(message: String) {

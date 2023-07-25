@@ -25,6 +25,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
     private val context: Context
     private val preferences: SharedPreferences
 
+
     init {
         context = applicationContext  // To access the Intent message broadcast system.
         preferences = sharedPreferences  // Used to load and save the game state.
@@ -65,6 +66,9 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
     private var currPlayer: SquareState = SquareState.X
     private var winner = SquareState.E
 
+    private var players: MutableMap<Queue<String>, SquareState> = mutableMapOf()
+    private var clientPlayer = SquareState.E  // Only used in CLIENT mode
+
     data class ClientRequest(val requestString: String, val responseQ: Queue<String>)
 
     private val allIpAddresses: MutableList<String> = mutableListOf()
@@ -92,8 +96,6 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         restoreGameState()
         messageUIDisplayGrid()
         updateWinDisplay()
-
-        Log.d(TAG, "DELETEME: autoStatusCount = $autoStatusCount")
 
         while (gameIsRunning.get()) {
             val activityRequest = fromActivitiesToGameSeverQ.poll()  // Non-blocking read.
@@ -138,6 +140,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             socketServer = null
         }
 
+        autoStatusCountdown = 0
         try {
             socketClient = SocketClient(address, SocketServer.PORT)
             socketClient!!.start()
@@ -145,7 +148,6 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             e.printStackTrace()
         }
 
-        // Wait for success in both shutdown and startup
         gameMode = GameMode.CLIENT
     }
 
@@ -196,6 +198,12 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
                     messageUIClearGridBackground()
                 }
             }
+            if (message.startsWith("Player=", true)) {
+                val allocatedPlayer = SquareState.valueOf(message.substringAfter("Player="))
+                clientPlayer = allocatedPlayer
+                Log.d(TAG, "Remote Game Server allocated [$clientPlayer] to this client.")
+            }
+
             messageUIDisplayGrid()
         }
         if (message == "shutdown" || message == "abandoned") {
@@ -220,13 +228,16 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             } else {
                 val indexString = message[2].toString()
                 val gridIndex = Integer.valueOf(indexString)
-                playSquare(gridIndex)
-                messageUIDisplayGrid()
+
+                // Only allow the server to play an unallocated player
+                if (!players.containsValue(currPlayer)) {
+                    playSquare(gridIndex)
+                    messageUIDisplayGrid()
+                }
             }
         }
         if (message == "UpdateSettings") {
-            messageSettingsDisplayIpAddress(allIpAddresses)
-            messageSettingsDisplayMode(gameMode.toString())
+            messageSettingsDisplayStatus()
         }
         if (message == "StartServer:") {
             switchToLocalServerMode()
@@ -248,12 +259,32 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
     private fun handleClientHandlerMessage(requestString: String, responseQ: Queue<String>) {
 
         var validRequest = false
+        if (requestString == "Initialise") {
+            validRequest = true
+            // Is there a spare player?
+            if (players.size < 2) {
+                // Is the current player available?
+                if (!players.containsValue(currPlayer)) {
+                    // Allocate the current player to this client
+                    players[responseQ] = currPlayer
+                } else {
+                    // Allocate the alternative player
+                    if (currPlayer == SquareState.X) {
+                        players[responseQ] = SquareState.O
+                    } else {
+                        players[responseQ] = SquareState.X
+                    }
+                }
+                responseQ.add("Player=${players[responseQ].toString()}")
+            }
+        }
         if (requestString.startsWith("p:", true)) {
             validRequest = true
             val indexString = requestString[2].toString()
             val gridIndex = Integer.valueOf(indexString)
-            playSquare(gridIndex)
-
+            if (players[responseQ] == currPlayer) {  // Only allow the allocated player
+                playSquare(gridIndex)
+            }
             responseQ.add("s:${encodeGrid()}$currPlayer$winner")  // TODO: Change to encode status
             messageUIDisplayGrid()
         }
@@ -265,6 +296,9 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             validRequest = true
             responseQ.add(requestString)
             // TODO - allow other players to take over client's role ...
+            if (players.containsKey(responseQ)) {
+                players.remove(responseQ)
+            }
         }
 
         if (!validRequest) {
@@ -343,6 +377,35 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         currPlayer = SquareState.valueOf(preferences.getString("CurrPlayer", "X").toString())
     }
 
+    private fun messageSettingsDisplayStatus() {
+        val intent = Intent()
+        intent.action = context.packageName + SettingsActivity.DISPLAY_MESSAGE_SUFFIX
+        intent.putExtra("CurrMode", gameMode.toString())
+
+        var status = ""
+        if (gameMode == GameMode.CLIENT) {
+            status = "Connected to ${socketClient?.getServer()}"
+        }
+        if (gameMode == GameMode.SERVER) {
+            status = "Connected Clients: ${socketServer?.countOfClients()}"
+        }
+
+        intent.putExtra("CurrStatus", status)
+
+        var listAsString = "Server not running"
+        if (gameMode == GameMode.SERVER) {
+            listAsString = ""
+            allIpAddresses.forEach { addr ->
+                if (listAsString.isNotEmpty()) {
+                    listAsString += ", "
+                }
+                listAsString += addr
+            }
+        }
+        intent.putExtra("IpAddressList", listAsString)
+
+        context.sendBroadcast(intent)
+    }
     private fun messageSettingsDisplayMode(mode: String) {
         val intent = Intent()
         intent.action = context.packageName + SettingsActivity.DISPLAY_MESSAGE_SUFFIX

@@ -41,8 +41,8 @@
 
     <TextView
         android:id="@+id/textViewIPAddress"
-        android:layout_width="249dp"
-        android:layout_height="28dp"
+        android:layout_width="252dp"
+        android:layout_height="34dp"
         android:layout_marginTop="16dp"
         android:text="IP Address"
         android:textAlignment="center"
@@ -85,8 +85,8 @@
 
     <ImageView
         android:id="@+id/imageViewPrevIpAddress"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="34dp"
+        android:layout_height="34dp"
         android:onClick="onClickPrevAddress"
         app:layout_constraintEnd_toStartOf="@+id/textViewIPAddress"
         app:layout_constraintTop_toTopOf="@+id/textViewIPAddress"
@@ -94,8 +94,8 @@
 
     <ImageView
         android:id="@+id/imageViewNextIpAddress"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="34dp"
+        android:layout_height="34dp"
         android:onClick="onClickNextAddress"
         app:layout_constraintStart_toEndOf="@+id/textViewIPAddress"
         app:layout_constraintTop_toTopOf="@+id/textViewIPAddress"

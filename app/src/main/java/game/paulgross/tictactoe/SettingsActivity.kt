@@ -135,7 +135,7 @@ class SettingsActivity : AppCompatActivity() {
         unregisterReceiver(gameMessageReceiver)
     }
 
-    private var allIpAddresses: List<String>? = null
+    private var allIpAddresses: MutableList<String>? = mutableListOf()
 
     /**
     Receive messages from the GameServer.
@@ -144,7 +144,11 @@ class SettingsActivity : AppCompatActivity() {
         override fun onReceive(context: Context, intent: Intent) {
             val ipAddressList = intent.getStringExtra("IpAddressList")
             val currMode = intent.getStringExtra("CurrMode")
+            val currStatus = intent.getStringExtra("CurrStatus")
 
+            if (currStatus != null) {
+                findViewById<TextView>(R.id.textViewStatus).text = currStatus
+            }
             if (currMode != null) {
                 findViewById<TextView>(R.id.textViewCurrentMode).text = currMode
             }
@@ -152,10 +156,10 @@ class SettingsActivity : AppCompatActivity() {
 
                 val newIpAddresses = ipAddressList.split(",")
                 if (newIpAddresses != allIpAddresses) {
-                    allIpAddresses = newIpAddresses
+                    allIpAddresses?.clear()
+                    allIpAddresses?.addAll(newIpAddresses)
                     val primaryAddress = allIpAddresses?.get(allIpAddresses!!.lastIndex)
                     // TODO - just one text field is needed here...
-//                    findViewById<TextView>(R.id.textViewAllIPpAddresses).text = primaryAddress
                     findViewById<TextView>(R.id.textViewIPAddress).text = primaryAddress
                 }
             }
