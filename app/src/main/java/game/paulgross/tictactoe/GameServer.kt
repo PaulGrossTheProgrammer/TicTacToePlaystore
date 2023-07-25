@@ -181,6 +181,56 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
     private var previousStateUpdate = ""
 
+    private fun handleClientHandlerMessage(message: String, responseQ: Queue<String>) {
+
+        var validRequest = false
+        if (message == "Initialise") {
+            validRequest = true
+            // Is there a spare player?
+            if (players.size < 2) {
+                // Is the current player available?
+                if (!players.containsValue(currPlayer)) {
+                    // Allocate the current player to this client
+                    players[responseQ] = currPlayer
+                } else {
+                    // Allocate the alternative player
+                    if (currPlayer == SquareState.X) {
+                        players[responseQ] = SquareState.O
+                    } else {
+                        players[responseQ] = SquareState.X
+                    }
+                }
+                responseQ.add("Player=${players[responseQ].toString()}")
+            }
+        }
+        if (message.startsWith("p:", true)) {
+            validRequest = true
+            val indexString = message[2].toString()
+            val gridIndex = Integer.valueOf(indexString)
+            if (players[responseQ] == currPlayer) {  // Only allow the allocated player
+                playSquare(gridIndex)
+            }
+            responseQ.add("s:${encodeGrid()}$currPlayer$winner")  // TODO: Change to encode status
+            messageUIDisplayGrid()
+        }
+        if (message == "status:") {
+            validRequest = true
+            responseQ.add("s:${encodeGrid()}$currPlayer$winner")
+        }
+        if (message == "shutdown" || message == "abandoned") {
+            validRequest = true
+            responseQ.add(message)
+            // TODO - allow other players to take over client's role ...
+            if (players.containsKey(responseQ)) {
+                players.remove(responseQ)
+            }
+        }
+
+        if (!validRequest) {
+            Log.d(TAG, "invalid request: [$message]")
+        }
+    }
+
     private fun handleClientMessage(message: String, responseQ: Queue<String>) {
         if (message.startsWith("s:", true)) {
             val remoteState = message.substringAfter("s:")
@@ -256,55 +306,6 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         }
     }
 
-    private fun handleClientHandlerMessage(requestString: String, responseQ: Queue<String>) {
-
-        var validRequest = false
-        if (requestString == "Initialise") {
-            validRequest = true
-            // Is there a spare player?
-            if (players.size < 2) {
-                // Is the current player available?
-                if (!players.containsValue(currPlayer)) {
-                    // Allocate the current player to this client
-                    players[responseQ] = currPlayer
-                } else {
-                    // Allocate the alternative player
-                    if (currPlayer == SquareState.X) {
-                        players[responseQ] = SquareState.O
-                    } else {
-                        players[responseQ] = SquareState.X
-                    }
-                }
-                responseQ.add("Player=${players[responseQ].toString()}")
-            }
-        }
-        if (requestString.startsWith("p:", true)) {
-            validRequest = true
-            val indexString = requestString[2].toString()
-            val gridIndex = Integer.valueOf(indexString)
-            if (players[responseQ] == currPlayer) {  // Only allow the allocated player
-                playSquare(gridIndex)
-            }
-            responseQ.add("s:${encodeGrid()}$currPlayer$winner")  // TODO: Change to encode status
-            messageUIDisplayGrid()
-        }
-        if (requestString == "status:") {
-            validRequest = true
-            responseQ.add("s:${encodeGrid()}$currPlayer$winner")
-        }
-        if (requestString == "shutdown" || requestString == "abandoned") {
-            validRequest = true
-            responseQ.add(requestString)
-            // TODO - allow other players to take over client's role ...
-            if (players.containsKey(responseQ)) {
-                players.remove(responseQ)
-            }
-        }
-
-        if (!validRequest) {
-            Log.d(TAG, "invalid request: [$requestString]")
-        }
-    }
 
     private fun pushStateToClients() {
         socketServer?.pushMessageToClients("s:${encodeGrid()}$currPlayer$winner")
