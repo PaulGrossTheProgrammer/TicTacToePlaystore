@@ -201,7 +201,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
                     }
                 }
                 responseQ.add("Player=${players[responseQ].toString()}")
-                messageUIDisplayUpdate()  // FIXME - does this update the display when a remote client coonects?
+                messageUIDisplayUpdate()
             }
         }
         if (message.startsWith("p:", true)) {
@@ -223,11 +223,10 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         if (message == "shutdown" || message == "abandoned") {
             validRequest = true
             responseQ.add(message)
-            // TODO - allow other players to take over client's role ...
             if (players.containsKey(responseQ)) {
                 players.remove(responseQ)
             }
-            messageUIDisplayUpdate()  // FIXME - does this update the display when a remote client connects?
+            messageUIDisplayUpdate()
         }
 
         if (!validRequest) {
@@ -249,9 +248,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
                 currPlayer = SquareState.valueOf(remoteState[9].toString())
                 winner = SquareState.valueOf(remoteState[10].toString())
 
-                saveGameState()
-
-                // FIXME: Why doesn't this update the "wait for"/"your turn" message immediately???
+                saveGameState()  // FIXME - on disconnect we lose the STATE???
                 messageUIDisplayUpdate()
 
                 val win = updateWinDisplay()
@@ -292,6 +289,9 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
                 if (!players.containsValue(currPlayer)) {
                     playSquare(gridIndex)
                     messageUIDisplayUpdate()
+                    if (gameMode == GameMode.SERVER) {
+                        pushStateToClients()
+                    }
                 }
             }
         }
@@ -508,15 +508,10 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         }
 
         grid[gridIndex] = currPlayer
-
-        // TODO - in server mode PUSH to remote clients
-/*        if (gameMode == GameMode.SERVER) {
-            pushStateToClients()
-            messageUIDisplayUpdate()  // In case the server is a player too???
-        }*/
+        Log.d(TAG, "Play $gridIndex")
 
         checkWinner()
-        saveGameState()
+        saveGameState()  // TODO: Is this redundant???
     }
 
     private fun checkWinner() {

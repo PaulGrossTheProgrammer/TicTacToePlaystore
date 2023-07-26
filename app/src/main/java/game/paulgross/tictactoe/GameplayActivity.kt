@@ -158,7 +158,6 @@ class GameplayActivity : AppCompatActivity() {
 
     fun onClickNewGame(view: View) {
         // Ask user to confirm new game
-        // FIXME: The buttons on the AlertDialog have different colours to the layout.
         val builder = AlertDialog.Builder(this)
         builder.setTitle(getString(R.string.new_game_title_message))
         builder.setMessage(getString(R.string.new_game_confirm_message))
@@ -182,7 +181,6 @@ class GameplayActivity : AppCompatActivity() {
     }
 
     private fun confirmExitApp() {
-        // FIXME: The buttons on the AlertDialog have different colours to the layout.
         val builder = AlertDialog.Builder(this)
         builder.setTitle(getString(R.string.exit_title_message))
         builder.setMessage(getString(R.string.exit_confirm_message))
