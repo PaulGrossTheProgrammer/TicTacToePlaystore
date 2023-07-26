@@ -94,7 +94,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         determineIpAddresses()
 
         restoreGameState()
-        messageUIDisplayGrid()
+        messageUIDisplayUpdate()
         updateWinDisplay()
 
         while (gameIsRunning.get()) {
@@ -201,6 +201,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
                     }
                 }
                 responseQ.add("Player=${players[responseQ].toString()}")
+                messageUIDisplayUpdate()  // FIXME - does this update the display when a remote client coonects?
             }
         }
         if (message.startsWith("p:", true)) {
@@ -211,7 +212,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
                 playSquare(gridIndex)
             }
             responseQ.add("s:${encodeGrid()}$currPlayer$winner")  // TODO: Change to encode status
-            messageUIDisplayGrid()
+            messageUIDisplayUpdate()
         }
         if (message == "status:") {
             validRequest = true
@@ -224,6 +225,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             if (players.containsKey(responseQ)) {
                 players.remove(responseQ)
             }
+            messageUIDisplayUpdate()  // FIXME - does this update the display when a remote client coonects?
         }
 
         if (!validRequest) {
@@ -248,8 +250,8 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
                     messageUIClearGridBackground()
                 }
             }
-
-            messageUIDisplayGrid()
+            // FIXME: Why doesn't this update the "wait for"/"your turn" message immediately???
+            messageUIDisplayUpdate()
         }
         if (message.startsWith("Player=", true)) {
             val allocatedPlayer = SquareState.valueOf(message.substringAfter("Player="))
@@ -265,11 +267,11 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         if (message == "reset:") {
             resetGame()
             messageUIResetDisplay()
-            messageUIDisplayGrid()
+            messageUIDisplayUpdate()
         }
         if (message == "resume:") {
             restoreGameState()
-            messageUIDisplayGrid()
+            messageUIDisplayUpdate()
             updateWinDisplay()
         }
         if (message.startsWith("p:", true)) {
@@ -282,7 +284,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
                 // Only allow the server to play an unallocated player
                 if (!players.containsValue(currPlayer)) {
                     playSquare(gridIndex)
-                    messageUIDisplayGrid()
+                    messageUIDisplayUpdate()
                 }
             }
         }
@@ -445,8 +447,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         context.sendBroadcast(intent)
     }
 
-    // TODO - rename to display update all.
-    private fun messageUIDisplayGrid() {
+    private fun messageUIDisplayUpdate() {
         val intent = Intent()
         intent.action = context.packageName + GameplayActivity.DISPLAY_MESSAGE_SUFFIX
         val gs = encodeGrid()
@@ -527,6 +528,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         // TODO - in server mode PUSH to remote clients
         if (gameMode == GameMode.SERVER) {
             pushStateToClients()
+            messageUIDisplayUpdate()  // In case the server is a player too???
         }
 
         checkWinner()
