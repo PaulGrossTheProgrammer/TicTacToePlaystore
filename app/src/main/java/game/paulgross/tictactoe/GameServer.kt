@@ -90,8 +90,6 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
     private var autoStatusCountdown = 0L
 
     override fun run() {
-        // TODO: Move this IP Address code into function that listens to change of network state.
-        determineIpAddresses()
 
         restoreGameState()
         messageUIDisplayUpdate()
@@ -209,9 +207,10 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             val indexString = message[2].toString()
             val gridIndex = Integer.valueOf(indexString)
             if (players[responseQ] == currPlayer) {  // Only allow the allocated player
-                playSquare(gridIndex)
-                // TODO - maybe have a 'changed' flag to avoid unneeded pushes here...
-                pushStateToClients() // Make sure all other clients know about the change.
+                val validMove = playSquare(gridIndex)
+                if (validMove) {
+                    pushStateToClients() // Make sure all clients know about the change.
+                }
             }
             responseQ.add("s:${encodeGrid()}$currPlayer$winner")  // TODO: Change to encode status
             messageUIDisplayUpdate()
@@ -287,10 +286,12 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
                 // Only allow the server to play an unallocated player
                 if (!players.containsValue(currPlayer)) {
-                    playSquare(gridIndex)
-                    messageUIDisplayUpdate()
-                    if (gameMode == GameMode.SERVER) {
-                        pushStateToClients()
+                    val validMove= playSquare(gridIndex)
+                    if (validMove) {
+                        messageUIDisplayUpdate()
+                        if (gameMode == GameMode.SERVER) {
+                            pushStateToClients()
+                        }
                     }
                 }
             }
@@ -498,13 +499,13 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         pushStateToClients()
     }
 
-    private fun playSquare(gridIndex: Int) {
+    private fun playSquare(gridIndex: Int): Boolean {
         if (winner != SquareState.E) {
-            return // No more moves after a win
+            return false  // No more moves after a win
         }
 
         if (grid[gridIndex] != SquareState.E) {
-            return  // Can only change Empty squares
+            return  false  // Can only change Empty squares
         }
 
         grid[gridIndex] = currPlayer
@@ -512,6 +513,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
         checkWinner()
         saveGameState()  // TODO: Is this redundant???
+        return true
     }
 
     private fun checkWinner() {
@@ -527,6 +529,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
     }
 
     private fun updateWinDisplay(): Boolean {
+        // TODO: Convert Toast to status message.
         val winSquares: List<Int>? = getWinningSquares()
         if (winSquares != null) {
             winner = grid[winSquares[0]]
@@ -550,6 +553,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         listOf(0, 4, 8),
         listOf(2, 4, 6)
     )
+
     private fun getWinningSquares(): List<Int>? {
         allPossibleWinCombinations.forEach{ possibleWin ->
             if (grid[possibleWin[0]] != SquareState.E
@@ -562,7 +566,6 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         }
         return null
     }
-
 
     companion object {
         private val TAG = GameServer::class.java.simpleName

@@ -15,15 +15,17 @@ import androidx.appcompat.app.AlertDialog
 
 class SettingsActivity : AppCompatActivity() {
 
-    private val periodicUpdateThread: PeriodicUpdater = PeriodicUpdater()
+    private var periodicUpdateThread: PeriodicUpdater? = null
 
     class PeriodicUpdater: Thread() {
+
+        private val refreshPeriodMilliseconds = 500L
 
         private var working = true
         override fun run() {
             while (working) {
                 GameServer.queueActivityRequest("UpdateSettings")
-                sleep(1000L)
+                sleep(refreshPeriodMilliseconds)
             }
         }
 
@@ -41,19 +43,24 @@ class SettingsActivity : AppCompatActivity() {
         Log.d(TAG, "Getting GameServer ...")
         GameServer.activate(applicationContext, getPreferences(MODE_PRIVATE))
 
-        periodicUpdateThread.start()
+        periodicUpdateThread = PeriodicUpdater()
+        periodicUpdateThread!!.start()
     }
 
     override fun onPause() {
         super.onPause()
-        periodicUpdateThread.shutdown()
+        periodicUpdateThread?.shutdown()
     }
 
     override fun onBackPressed() {
-        //  Prevents the back button from working.
+        backToGameplay()
     }
 
     fun onClickBack(view: View) {
+        backToGameplay()
+    }
+
+    private fun backToGameplay() {
         val intent: Intent = Intent(this, GameplayActivity::class.java)
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)

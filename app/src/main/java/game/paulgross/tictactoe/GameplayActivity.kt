@@ -26,7 +26,6 @@ class GameplayActivity : AppCompatActivity() {
         disableMessagesFromGameServer()
         super.onPause()
 
-        // TODO: Because screen rotation calls onPause()...
         //  Maybe track "paused" flag so clients temporarily pause comms???
         //  What happens if the user makes a move during the rotate pause?
         //  Clients need to be sent the PAUSED state
