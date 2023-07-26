@@ -210,6 +210,8 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             val gridIndex = Integer.valueOf(indexString)
             if (players[responseQ] == currPlayer) {  // Only allow the allocated player
                 playSquare(gridIndex)
+                // TODO - maybe have a 'changed' flag to avoid unneeded pushes here...
+                pushStateToClients() // Make sure all other clients know about the change.
             }
             responseQ.add("s:${encodeGrid()}$currPlayer$winner")  // TODO: Change to encode status
             messageUIDisplayUpdate()
@@ -225,7 +227,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             if (players.containsKey(responseQ)) {
                 players.remove(responseQ)
             }
-            messageUIDisplayUpdate()  // FIXME - does this update the display when a remote client coonects?
+            messageUIDisplayUpdate()  // FIXME - does this update the display when a remote client connects?
         }
 
         if (!validRequest) {
@@ -237,21 +239,26 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         if (message.startsWith("s:", true)) {
             val remoteState = message.substringAfter("s:")
             autoStatusCountdown = autoStatusCount  // Reset the auto-request countdown.
-            decodeGrid(remoteState.substring(0, 9))
-            currPlayer = SquareState.valueOf(remoteState[9].toString())
-            winner = SquareState.valueOf(remoteState[10].toString())
 
             if (previousStateUpdate != remoteState) {
+                Log.d(TAG, "REMOTE Game Server sent state change: [$remoteState]")
+
                 previousStateUpdate = remoteState
+
+                decodeGrid(remoteState.substring(0, 9))
+                currPlayer = SquareState.valueOf(remoteState[9].toString())
+                winner = SquareState.valueOf(remoteState[10].toString())
+
                 saveGameState()
+
+                // FIXME: Why doesn't this update the "wait for"/"your turn" message immediately???
+                messageUIDisplayUpdate()
 
                 val win = updateWinDisplay()
                 if (!win) {
                     messageUIClearGridBackground()
                 }
             }
-            // FIXME: Why doesn't this update the "wait for"/"your turn" message immediately???
-            messageUIDisplayUpdate()
         }
         if (message.startsWith("Player=", true)) {
             val allocatedPlayer = SquareState.valueOf(message.substringAfter("Player="))
@@ -409,29 +416,6 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
         context.sendBroadcast(intent)
     }
-    private fun messageSettingsDisplayMode(mode: String) {
-        val intent = Intent()
-        intent.action = context.packageName + SettingsActivity.DISPLAY_MESSAGE_SUFFIX
-        intent.putExtra("CurrMode", mode)
-        context.sendBroadcast(intent)
-    }
-
-    private fun messageSettingsDisplayIpAddress(addrList: List<String>) {
-        var listAsString = "Server not running"
-        if (gameMode == GameMode.SERVER) {
-            listAsString = ""
-            addrList.forEach { addr ->
-                if (listAsString.isNotEmpty()) {
-                    listAsString += ", "
-                }
-                listAsString += addr
-            }
-        }
-        val intent = Intent()
-        intent.action = context.packageName + SettingsActivity.DISPLAY_MESSAGE_SUFFIX
-        intent.putExtra("IpAddressList", listAsString)
-        context.sendBroadcast(intent)
-    }
 
     private fun messageUIResetDisplay() {
         val intent = Intent()
@@ -526,10 +510,10 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         grid[gridIndex] = currPlayer
 
         // TODO - in server mode PUSH to remote clients
-        if (gameMode == GameMode.SERVER) {
+/*        if (gameMode == GameMode.SERVER) {
             pushStateToClients()
             messageUIDisplayUpdate()  // In case the server is a player too???
-        }
+        }*/
 
         checkWinner()
         saveGameState()

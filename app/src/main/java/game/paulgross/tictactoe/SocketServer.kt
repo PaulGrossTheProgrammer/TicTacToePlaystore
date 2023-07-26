@@ -52,6 +52,7 @@ class SocketServer(private val gameRequestQ: BlockingQueue<GameServer.ClientRequ
     }
 
     fun pushMessageToClients(message: String) {
+        Log.d(TAG, "The Socket Server is pushing a message to all clients:  [${message}]")
         clientHandlers.forEach {handler ->
             handler.queueMessage(message)
         }
