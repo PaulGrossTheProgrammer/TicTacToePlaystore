@@ -212,13 +212,13 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
                     pushStateToClients() // Make sure all clients know about the change.
                 }
             } else {
-                responseQ.add("s:${encodeGrid()}$currPlayer$winner")  // TODO: Change to encode status
+                responseQ.add("s:${encodeGrid(grid)}$currPlayer$winner")  // TODO: Change to encode status
             }
             messageUIDisplayUpdate()
         }
         if (message == "status:") {
             validRequest = true
-            responseQ.add("s:${encodeGrid()}$currPlayer$winner")
+            responseQ.add("s:${encodeGrid(grid)}$currPlayer$winner")
         }
         if (message == "shutdown" || message == "abandoned") {
             validRequest = true
@@ -319,7 +319,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
 
     private fun pushStateToClients() {
-        socketServer?.pushMessageToClients("s:${encodeGrid()}$currPlayer$winner")
+        socketServer?.pushMessageToClients("s:${encodeGrid(grid)}$currPlayer$winner")
     }
 
     fun pauseApp() {
@@ -436,8 +436,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
     private fun messageUIDisplayUpdate() {
         val intent = Intent()
         intent.action = context.packageName + GameplayActivity.DISPLAY_MESSAGE_SUFFIX
-        val gs = encodeGrid()
-        intent.putExtra("grid", encodeGrid())
+        intent.putExtra("grid", encodeGrid(grid))
         intent.putExtra("player", currPlayer.toString())
         if (gameMode == GameMode.LOCAL) {
             intent.putExtra("Status", "Current PLayer:")
@@ -479,14 +478,6 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         intent.action = context.packageName + GameplayActivity.DISPLAY_MESSAGE_SUFFIX
         intent.putExtra("winner", winner)
         context.sendBroadcast(intent)
-    }
-
-    private fun encodeGrid(): String {
-        var encoded = ""
-        for (i in 0..8) {
-            encoded += grid[i].toString()
-        }
-        return encoded
     }
 
     fun decodeGrid(gridString: String) {
@@ -576,6 +567,22 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
     companion object {
         private val TAG = GameServer::class.java.simpleName
+
+        fun encodeGrid(grid: Array<SquareState>): String {
+            var encoded = ""
+            for (i in 0..8) {
+                encoded += grid[i].toString()
+            }
+            return encoded
+        }
+
+        fun encodeState(grid: Array<SquareState>, currPlayer: SquareState, winner: SquareState ): String {
+            var state = "s:${encodeGrid(grid)}$currPlayer$winner"
+
+            // TODO - add the optional winning squares...
+
+            return state
+        }
 
         // The GameServer always runs in it's own thread, and shutdown() must be called as the App closes.
         @SuppressLint("StaticFieldLeak")
