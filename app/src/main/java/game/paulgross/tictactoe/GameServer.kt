@@ -93,7 +93,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
         restoreGameState()
         messageUIDisplayUpdate()
-        updateWinDisplay()
+        checkWinner()
 
         while (gameIsRunning.get()) {
             val activityRequest = fromActivitiesToGameSeverQ.poll()  // Non-blocking read.
@@ -212,13 +212,14 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
                     pushStateToClients() // Make sure all clients know about the change.
                 }
             } else {
-                responseQ.add("s:${encodeGrid(grid)}$currPlayer$winner")  // TODO: Change to encode status
+                // TODO - check that this still works.
+                responseQ.add("s:${encodeState(grid, currPlayer, winner)}")
             }
             messageUIDisplayUpdate()
         }
         if (message == "status:") {
             validRequest = true
-            responseQ.add("s:${encodeGrid(grid)}$currPlayer$winner")
+            responseQ.add("s:${encodeState(grid, currPlayer, winner)}")
         }
         if (message == "shutdown" || message == "abandoned") {
             validRequest = true
@@ -244,17 +245,16 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
                 previousStateUpdate = remoteState
 
-                decodeGrid(remoteState.substring(0, 9))
-                currPlayer = SquareState.valueOf(remoteState[9].toString())
-                winner = SquareState.valueOf(remoteState[10].toString())
+                val stateVars = decodeState(remoteState)
+                grid = stateVars.grid
+                currPlayer = stateVars.currPlayer
+                winner = stateVars.winner
+//                decodeGrid(remoteState.substring(0, 9))
+//                currPlayer = SquareState.valueOf(remoteState[9].toString())
+//                winner = SquareState.valueOf(remoteState[10].toString())
 
                 saveGameState()  // FIXME - on disconnect we lose the STATE???
                 messageUIDisplayUpdate()
-
-                val win = updateWinDisplay()
-                if (!win) {
-                    messageUIClearGridBackground()
-                }
             }
         }
         if (message.startsWith("Player=", true)) {
@@ -267,16 +267,15 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             switchToPureLocalMode()
         }
     }
+
     private fun handleActivityMessage(message: String) {
         if (message == "reset:") {
             resetGame()
-            messageUIResetDisplay()
             messageUIDisplayUpdate()
         }
         if (message == "resume:") {
             restoreGameState()
             messageUIDisplayUpdate()
-            updateWinDisplay()
         }
         if (message.startsWith("p:", true)) {
             if (gameMode == GameMode.CLIENT) {
@@ -419,34 +418,19 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         context.sendBroadcast(intent)
     }
 
-    private fun messageUIResetDisplay() {
-        val intent = Intent()
-        intent.action = context.packageName + GameplayActivity.DISPLAY_MESSAGE_SUFFIX
-        intent.putExtra("reset", true)
-        context.sendBroadcast(intent)
-    }
-
-    private fun messageUIClearGridBackground() {
-        val intent = Intent()
-        intent.action = context.packageName + GameplayActivity.DISPLAY_MESSAGE_SUFFIX
-        intent.putExtra("ClearBackground", true)
-        context.sendBroadcast(intent)
-    }
-
     private fun messageUIDisplayUpdate() {
         val intent = Intent()
         intent.action = context.packageName + GameplayActivity.DISPLAY_MESSAGE_SUFFIX
         intent.putExtra("State", encodeState(grid, currPlayer, winner))
-        intent.putExtra("grid", encodeGrid(grid))
-        intent.putExtra("player", currPlayer.toString())
-        if (gameMode == GameMode.LOCAL) {
-            intent.putExtra("StatusMessage", "Current PLayer:")
-        }
 
+        // FIXME - replace this with flags, and Localise the Activity messages.
+        var statusMessage = ""
         if (winner != SquareState.E) {
-            intent.putExtra("winner", winner.toString())
+            statusMessage = "Winner!"
         } else {
-            var statusMessage = ""
+            if (gameMode == GameMode.LOCAL) {
+                statusMessage = "Waiting for:"
+            }
             if (gameMode == GameMode.CLIENT ) {
                 if (currPlayer == clientPlayer) {
                     statusMessage = "Your Turn:"
@@ -461,31 +445,17 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
                     statusMessage = "Your Turn:"
                 }
             }
-            intent.putExtra("StatusMessage", statusMessage)
         }
+        intent.putExtra("StatusMessage", statusMessage)
         context.sendBroadcast(intent)
     }
 
-    private fun messageUIDisplayVictory(winSquares: List<Int>) {
-        val intent = Intent()
-        intent.action = context.packageName + GameplayActivity.DISPLAY_MESSAGE_SUFFIX
-        val squares = winSquares[0].toString() + winSquares[1].toString() + winSquares[2].toString()
-        intent.putExtra("winsquares", squares)
-        context.sendBroadcast(intent)
-    }
 
-    private fun messageUIDisplayWinner(winner: String) {
-        val intent = Intent()
-        intent.action = context.packageName + GameplayActivity.DISPLAY_MESSAGE_SUFFIX
-//        intent.putExtra("winner", winner)
-        context.sendBroadcast(intent)
-    }
-
-    fun decodeGrid(gridString: String) {
-        for (i in 0..8) {
-            grid[i] = SquareState.valueOf(gridString[i].toString())
-        }
-    }
+//    fun decodeGrid(gridString: String) {
+//        for (i in 0..8) {
+//            grid[i] = SquareState.valueOf(gridString[i].toString())
+//        }
+//    }
 
     fun resetGame() {
         for (i in 0..8) {
@@ -509,12 +479,8 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         grid[gridIndex] = currPlayer
         Log.d(TAG, "Play $gridIndex")
 
-//        val testEncodeState = encodeState(grid, currPlayer, winner)
-//        Log.d(TAG, "testEncodeState = $testEncodeState")
-
-//        checkWinner()
-        val hasWinner = updateWinDisplay()
-        if (!hasWinner) {
+        checkWinner()
+        if (winner == SquareState.E) {
             // Switch to next player
             currPlayer = if (currPlayer == SquareState.X) {
                 SquareState.O
@@ -526,19 +492,10 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         return true
     }
 
-//    private fun checkWinner() {
-//
-//    }
-
-    private fun updateWinDisplay(): Boolean {
-        val winSquares: List<Int>? = getWinningSquares(grid)
+    private fun checkWinner() {
+        val winSquares = getWinningSquares(grid)
         if (winSquares != null) {
             winner = grid[winSquares[0]]
-            messageUIDisplayVictory(winSquares)
-//            messageUIDisplayWinner(winner.toString())
-            return true
-        } else {
-            return false
         }
     }
 

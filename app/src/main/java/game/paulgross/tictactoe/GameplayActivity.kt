@@ -85,19 +85,6 @@ class GameplayActivity : AppCompatActivity() {
     /**
      * Updates the current grid state into the display squares.
      */
-    private fun displayGrid_old(gridStateString: String?) {
-        for (i in 0..8) {
-            val state = GameServer.SquareState.valueOf(gridStateString?.get(i).toString())
-            val view = displaySquareList[i]
-
-            if (state == GameServer.SquareState.E) {
-                view?.text = ""
-            } else {
-                view?.text = state.toString()
-            }
-        }
-    }
-
     private fun displayGrid(grid: Array<GameServer.SquareState>) {
         for (i in 0..8) {
             val view = displaySquareList[i]
@@ -111,45 +98,20 @@ class GameplayActivity : AppCompatActivity() {
         }
     }
 
-    private fun resetGridDisplay() {
-        clearGrid()
-        resetGridBackground()
-    }
-
-    private fun clearGrid() {
-        displaySquareList.forEach{ square ->
-            square?.text = ""
-        }
-    }
-
     private fun resetGridBackground() {
         displaySquareList.forEach{ square ->
             square?.setBackgroundColor(colorOfReset!!)
         }
     }
 
-    // TODO - can I get rid of this???
-    private fun toastWinner(winner: String) {
-//        Toast.makeText(
-//            this,
-//            String.format(getString(R.string.winner_message), winner),
-//            Toast.LENGTH_SHORT
-//        ).show()
-        displayStatusMessage(String.format(getString(R.string.winner_message), winner))
-    }
-
     private fun displayWinner(winner: GameServer.SquareState) {
         displayStatusMessage(String.format(getString(R.string.winner_message), winner.toString()))
     }
 
-    private fun displayVictory(winSquares: String) {
-        val s1 = Integer.parseInt(winSquares[0].toString())
-        val s2 = Integer.parseInt(winSquares[1].toString())
-        val s3 = Integer.parseInt(winSquares[2].toString())
-
-        displaySquareList[s1]?.setBackgroundColor(colorOfWin!!)
-        displaySquareList[s2]?.setBackgroundColor(colorOfWin!!)
-        displaySquareList[s3]?.setBackgroundColor(colorOfWin!!)
+    private fun displayVictory(winSquares: List<Int>) {
+        displaySquareList[winSquares[0]]?.setBackgroundColor(colorOfWin!!)
+        displaySquareList[winSquares[1]]?.setBackgroundColor(colorOfWin!!)
+        displaySquareList[winSquares[2]]?.setBackgroundColor(colorOfWin!!)
     }
 
     /**
@@ -164,7 +126,12 @@ class GameplayActivity : AppCompatActivity() {
         GameServer.queueActivityRequest("p:$gridIndex")
     }
 
-    private fun displayCurrPlayer(player: String) {
+    private fun displayCurrPlayer(player: GameServer.SquareState) {
+        (textPlayerView as TextView).text =
+            String.format(getString(R.string.curr_player_message), player.toString())
+    }
+
+    private fun displayCurrPlayer_old(player: String) {
         (textPlayerView as TextView).text =
             String.format(getString(R.string.curr_player_message), player)
     }
@@ -229,49 +196,30 @@ class GameplayActivity : AppCompatActivity() {
      */
     private val gameMessageReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            Log.d(TAG, "Got a message ...")
 
-            val resetFlag = intent.getBooleanExtra("reset", false)
-            val clearBackgroundFlag = intent.getBooleanExtra("ClearBackground", false)
-            val gridStateString = intent.getStringExtra("grid")
-            val playerString = intent.getStringExtra("player")
-            val winsquaresString = intent.getStringExtra("winsquares")
-            val winnerString = intent.getStringExtra("winner")
             val stateString = intent.getStringExtra("State")
             val statusMessage = intent.getStringExtra("StatusMessage")
 
             if (stateString != null) {
-                Log.d(TAG, "Got the State string $stateString")
                 val newState = GameServer.decodeState(stateString)
-                Log.d(TAG, "State.grid = ${newState.grid}")
-                Log.d(TAG, "State.currPlayer = ${newState.currPlayer}")
-                Log.d(TAG, "State.winner = ${newState.winner}")
-                Log.d(TAG, "State.winSquares = ${newState.winSquares}")
-                displayWinner(newState.winner)
+
                 displayGrid(newState.grid)
+                displayCurrPlayer(newState.currPlayer)
+                if (newState.winner != GameServer.SquareState.E) {
+                    displayWinner(newState.winner)
+                }
+
+                if (newState.winSquares == null) {
+                    resetGridBackground()
+                } else {
+                    displayVictory(newState.winSquares)
+                }
             }
 
-            if (resetFlag) {
-                resetGridDisplay()
-            }
             if (statusMessage != null) {
+                Log.d(TAG, "message received [$statusMessage]")
                 displayStatusMessage(statusMessage)
             }
-            if (clearBackgroundFlag) {
-                resetGridBackground()
-            }
-//            if (gridStateString != null) {
-//                displayGrid_old(gridStateString)
-//            }
-            if (playerString != null) {
-                displayCurrPlayer(playerString)
-            }
-            if (winsquaresString != null) {
-                displayVictory(winsquaresString)
-            }
-//            if (winnerString != null) {
-//                toastWinner(winnerString)
-//            }
         }
     }
 
