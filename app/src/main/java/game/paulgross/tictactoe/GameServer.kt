@@ -542,7 +542,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         }
     }
 
-    data class StateVariables(var grid: Array<SquareState?>, val currPlayer: SquareState, val winner: SquareState, val winSquares: List<Int>?)
+    data class StateVariables(var grid: Array<SquareState>, val currPlayer: SquareState, val winner: SquareState, val winSquares: List<Int>?)
 
     companion object {
         private val TAG = GameServer::class.java.simpleName
@@ -598,7 +598,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         fun decodeState(stateString: String): StateVariables {
             Log.d(TAG, "decodeState() for $stateString")
 
-            val grid: Array<SquareState?> = arrayOfNulls(9)
+            val grid: Array<SquareState> = Array(9) {SquareState.E}
             for (i in 0..8) {
                 grid[i] = SquareState.valueOf(stateString[i].toString())
             }
@@ -607,7 +607,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
             var winSquares: List<Int>? = null
             if (stateString[11].isDigit()) {
-                winSquares = listOf(stateString[11].code.toInt(), stateString[12].code.toInt(), stateString[13].code.toInt())
+                winSquares = listOf(stateString[11].digitToInt(), stateString[12].digitToInt(), stateString[13].digitToInt())
             }
 
             return StateVariables(grid, currPlayer, winner, winSquares)

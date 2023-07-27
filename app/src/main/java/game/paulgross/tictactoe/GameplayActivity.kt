@@ -9,7 +9,6 @@ import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 
@@ -86,10 +85,23 @@ class GameplayActivity : AppCompatActivity() {
     /**
      * Updates the current grid state into the display squares.
      */
-    private fun displayGrid(gridStateString: String?) {
+    private fun displayGrid_old(gridStateString: String?) {
         for (i in 0..8) {
             val state = GameServer.SquareState.valueOf(gridStateString?.get(i).toString())
             val view = displaySquareList[i]
+
+            if (state == GameServer.SquareState.E) {
+                view?.text = ""
+            } else {
+                view?.text = state.toString()
+            }
+        }
+    }
+
+    private fun displayGrid(grid: Array<GameServer.SquareState>) {
+        for (i in 0..8) {
+            val view = displaySquareList[i]
+            val state = grid[i]
 
             if (state == GameServer.SquareState.E) {
                 view?.text = ""
@@ -124,6 +136,10 @@ class GameplayActivity : AppCompatActivity() {
 //            Toast.LENGTH_SHORT
 //        ).show()
         displayStatusMessage(String.format(getString(R.string.winner_message), winner))
+    }
+
+    private fun displayWinner(winner: GameServer.SquareState) {
+        displayStatusMessage(String.format(getString(R.string.winner_message), winner.toString()))
     }
 
     private fun displayVictory(winSquares: String) {
@@ -227,6 +243,12 @@ class GameplayActivity : AppCompatActivity() {
             if (stateString != null) {
                 Log.d(TAG, "Got the State string $stateString")
                 val newState = GameServer.decodeState(stateString)
+                Log.d(TAG, "State.grid = ${newState.grid}")
+                Log.d(TAG, "State.currPlayer = ${newState.currPlayer}")
+                Log.d(TAG, "State.winner = ${newState.winner}")
+                Log.d(TAG, "State.winSquares = ${newState.winSquares}")
+                displayWinner(newState.winner)
+                displayGrid(newState.grid)
             }
 
             if (resetFlag) {
@@ -238,18 +260,18 @@ class GameplayActivity : AppCompatActivity() {
             if (clearBackgroundFlag) {
                 resetGridBackground()
             }
-            if (gridStateString != null) {
-                displayGrid(gridStateString)
-            }
+//            if (gridStateString != null) {
+//                displayGrid_old(gridStateString)
+//            }
             if (playerString != null) {
                 displayCurrPlayer(playerString)
             }
             if (winsquaresString != null) {
                 displayVictory(winsquaresString)
             }
-            if (winnerString != null) {
-                toastWinner(winnerString)
-            }
+//            if (winnerString != null) {
+//                toastWinner(winnerString)
+//            }
         }
     }
 
