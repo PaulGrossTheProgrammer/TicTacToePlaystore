@@ -436,14 +436,15 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
     private fun messageUIDisplayUpdate() {
         val intent = Intent()
         intent.action = context.packageName + GameplayActivity.DISPLAY_MESSAGE_SUFFIX
+        intent.putExtra("State", encodeState(grid, currPlayer, winner))
         intent.putExtra("grid", encodeGrid(grid))
         intent.putExtra("player", currPlayer.toString())
         if (gameMode == GameMode.LOCAL) {
-            intent.putExtra("Status", "Current PLayer:")
+            intent.putExtra("StatusMessage", "Current PLayer:")
         }
 
         if (winner != SquareState.E) {
-            intent.putExtra("winner", winner)
+            intent.putExtra("winner", winner.toString())
         } else {
             var statusMessage = ""
             if (gameMode == GameMode.CLIENT ) {
@@ -460,7 +461,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
                     statusMessage = "Your Turn:"
                 }
             }
-            intent.putExtra("Status", statusMessage)
+            intent.putExtra("StatusMessage", statusMessage)
         }
         context.sendBroadcast(intent)
     }
@@ -476,7 +477,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
     private fun messageUIDisplayWinner(winner: String) {
         val intent = Intent()
         intent.action = context.packageName + GameplayActivity.DISPLAY_MESSAGE_SUFFIX
-        intent.putExtra("winner", winner)
+//        intent.putExtra("winner", winner)
         context.sendBroadcast(intent)
     }
 
@@ -508,6 +509,9 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         grid[gridIndex] = currPlayer
         Log.d(TAG, "Play $gridIndex")
 
+//        val testEncodeState = encodeState(grid, currPlayer, winner)
+//        Log.d(TAG, "testEncodeState = $testEncodeState")
+
 //        checkWinner()
         val hasWinner = updateWinDisplay()
         if (!hasWinner) {
@@ -527,47 +531,47 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 //    }
 
     private fun updateWinDisplay(): Boolean {
-        // TODO: Convert Toast to status message.
-        val winSquares: List<Int>? = getWinningSquares()
+        val winSquares: List<Int>? = getWinningSquares(grid)
         if (winSquares != null) {
             winner = grid[winSquares[0]]
             messageUIDisplayVictory(winSquares)
-            messageUIDisplayWinner(winner.toString())
+//            messageUIDisplayWinner(winner.toString())
             return true
         } else {
             return false
         }
     }
 
-    private val allPossibleWinCombinations: List<List<Int>> = listOf(
-        listOf(0, 1, 2),
-        listOf(3, 4, 5),
-        listOf(6, 7, 8),
-
-        listOf(0, 3, 6),
-        listOf(1, 4, 7),
-        listOf(2, 5, 8),
-
-        listOf(0, 4, 8),
-        listOf(2, 4, 6)
-    )
-
-    private fun getWinningSquares(): List<Int>? {
-        allPossibleWinCombinations.forEach{ possibleWin ->
-            if (grid[possibleWin[0]] != SquareState.E
-                &&
-                grid[possibleWin[0]] == grid[possibleWin[1]]
-                &&
-                grid[possibleWin[0]] == grid[possibleWin[2]]) {
-                return possibleWin  // Found a winner
-            }
-        }
-        return null
-    }
+    data class StateVariables(var grid: Array<SquareState?>, val currPlayer: SquareState, val winner: SquareState, val winSquares: List<Int>?)
 
     companion object {
         private val TAG = GameServer::class.java.simpleName
 
+        private val allPossibleWinCombinations: List<List<Int>> = listOf(
+            listOf(0, 1, 2),
+            listOf(3, 4, 5),
+            listOf(6, 7, 8),
+
+            listOf(0, 3, 6),
+            listOf(1, 4, 7),
+            listOf(2, 5, 8),
+
+            listOf(0, 4, 8),
+            listOf(2, 4, 6)
+        )
+
+        private fun getWinningSquares(grid: Array<SquareState>): List<Int>? {
+            allPossibleWinCombinations.forEach{ possibleWin ->
+                if (grid[possibleWin[0]] != SquareState.E
+                    &&
+                    grid[possibleWin[0]] == grid[possibleWin[1]]
+                    &&
+                    grid[possibleWin[0]] == grid[possibleWin[2]]) {
+                    return possibleWin  // Found a winner
+                }
+            }
+            return null
+        }
         fun encodeGrid(grid: Array<SquareState>): String {
             var encoded = ""
             for (i in 0..8) {
@@ -577,11 +581,36 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         }
 
         fun encodeState(grid: Array<SquareState>, currPlayer: SquareState, winner: SquareState ): String {
-            var state = "s:${encodeGrid(grid)}$currPlayer$winner"
+            var state = "${encodeGrid(grid)}$currPlayer$winner"
 
-            // TODO - add the optional winning squares...
+            val winSquares = getWinningSquares(grid)
+            if (winSquares == null) {
+                state += "EEE"
+            } else {
+                winSquares.forEach { square ->
+                    state += square.toString()
+                }
+            }
 
             return state
+        }
+
+        fun decodeState(stateString: String): StateVariables {
+            Log.d(TAG, "decodeState() for $stateString")
+
+            val grid: Array<SquareState?> = arrayOfNulls(9)
+            for (i in 0..8) {
+                grid[i] = SquareState.valueOf(stateString[i].toString())
+            }
+            val currPlayer = SquareState.valueOf(stateString[9].toString())
+            val winner = SquareState.valueOf(stateString[10].toString())
+
+            var winSquares: List<Int>? = null
+            if (stateString[11].isDigit()) {
+                winSquares = listOf(stateString[11].code.toInt(), stateString[12].code.toInt(), stateString[13].code.toInt())
+            }
+
+            return StateVariables(grid, currPlayer, winner, winSquares)
         }
 
         // The GameServer always runs in it's own thread, and shutdown() must be called as the App closes.

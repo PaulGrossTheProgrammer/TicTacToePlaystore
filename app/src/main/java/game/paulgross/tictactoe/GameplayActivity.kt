@@ -213,6 +213,7 @@ class GameplayActivity : AppCompatActivity() {
      */
     private val gameMessageReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
+            Log.d(TAG, "Got a message ...")
 
             val resetFlag = intent.getBooleanExtra("reset", false)
             val clearBackgroundFlag = intent.getBooleanExtra("ClearBackground", false)
@@ -220,7 +221,13 @@ class GameplayActivity : AppCompatActivity() {
             val playerString = intent.getStringExtra("player")
             val winsquaresString = intent.getStringExtra("winsquares")
             val winnerString = intent.getStringExtra("winner")
-            val statusMessage = intent.getStringExtra("Status")
+            val stateString = intent.getStringExtra("State")
+            val statusMessage = intent.getStringExtra("StatusMessage")
+
+            if (stateString != null) {
+                Log.d(TAG, "Got the State string $stateString")
+                val newState = GameServer.decodeState(stateString)
+            }
 
             if (resetFlag) {
                 resetGridDisplay()
