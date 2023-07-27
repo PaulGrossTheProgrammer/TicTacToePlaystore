@@ -245,6 +245,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
                 previousStateUpdate = remoteState
 
+                // TODO - check that this still works
                 val stateVars = decodeState(remoteState)
                 grid = stateVars.grid
                 currPlayer = stateVars.currPlayer
