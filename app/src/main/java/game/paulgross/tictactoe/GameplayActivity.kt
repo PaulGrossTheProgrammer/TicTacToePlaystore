@@ -116,12 +116,14 @@ class GameplayActivity : AppCompatActivity() {
         }
     }
 
+    // TODO - can I get rid of this???
     private fun toastWinner(winner: String) {
-        Toast.makeText(
-            this,
-            String.format(getString(R.string.winner_message), winner),
-            Toast.LENGTH_SHORT
-        ).show()
+//        Toast.makeText(
+//            this,
+//            String.format(getString(R.string.winner_message), winner),
+//            Toast.LENGTH_SHORT
+//        ).show()
+        displayStatusMessage(String.format(getString(R.string.winner_message), winner))
     }
 
     private fun displayVictory(winSquares: String) {

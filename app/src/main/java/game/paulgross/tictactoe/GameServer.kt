@@ -211,8 +211,9 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
                 if (validMove) {
                     pushStateToClients() // Make sure all clients know about the change.
                 }
+            } else {
+                responseQ.add("s:${encodeGrid()}$currPlayer$winner")  // TODO: Change to encode status
             }
-            responseQ.add("s:${encodeGrid()}$currPlayer$winner")  // TODO: Change to encode status
             messageUIDisplayUpdate()
         }
         if (message == "status:") {
@@ -438,25 +439,30 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         val gs = encodeGrid()
         intent.putExtra("grid", encodeGrid())
         intent.putExtra("player", currPlayer.toString())
-        var statusMessage = "TODO"
         if (gameMode == GameMode.LOCAL) {
-            statusMessage = "Current PLayer:"
+            intent.putExtra("Status", "Current PLayer:")
         }
-        if (gameMode == GameMode.CLIENT ) {
-            if (currPlayer == clientPlayer) {
-                statusMessage = "Your Turn:"
-            } else {
-                statusMessage = "Waiting for:"
+
+        if (winner != SquareState.E) {
+            intent.putExtra("winner", winner)
+        } else {
+            var statusMessage = ""
+            if (gameMode == GameMode.CLIENT ) {
+                if (currPlayer == clientPlayer) {
+                    statusMessage = "Your Turn:"
+                } else {
+                    statusMessage = "Waiting for:"
+                }
             }
-        }
-        if (gameMode == GameMode.SERVER) {
-            if (players.containsValue(currPlayer)) {
-                statusMessage = "Waiting for:"
-            } else {
-                statusMessage = "Your Turn:"
+            if (gameMode == GameMode.SERVER) {
+                if (players.containsValue(currPlayer)) {
+                    statusMessage = "Waiting for:"
+                } else {
+                    statusMessage = "Your Turn:"
+                }
             }
+            intent.putExtra("Status", statusMessage)
         }
-        intent.putExtra("Status", statusMessage)
         context.sendBroadcast(intent)
     }
 
@@ -511,12 +517,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         grid[gridIndex] = currPlayer
         Log.d(TAG, "Play $gridIndex")
 
-        checkWinner()
-        saveGameState()  // TODO: Is this redundant???
-        return true
-    }
-
-    private fun checkWinner() {
+//        checkWinner()
         val hasWinner = updateWinDisplay()
         if (!hasWinner) {
             // Switch to next player
@@ -526,7 +527,13 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
                 SquareState.X
             }
         }
+        saveGameState()  // TODO: Is this redundant???
+        return true
     }
+
+//    private fun checkWinner() {
+//
+//    }
 
     private fun updateWinDisplay(): Boolean {
         // TODO: Convert Toast to status message.
