@@ -405,30 +405,20 @@ class GameServer(private val context: Context, private val preferences: SharedPr
         intent.action = context.packageName + GameplayActivity.DISPLAY_MESSAGE_SUFFIX
         intent.putExtra("State", encodeState(grid, currPlayer, winner))
 
-        // FIXME - replace this with flags, to allow for Localised Activity messages.
-        var statusMessage = ""
-        if (winner != SquareState.E) {
-            statusMessage = "Winner!"
-        } else {
+        var turnFlag = false;
+        if (winner == SquareState.E) {
             if (gameMode == GameMode.LOCAL) {
-                statusMessage = "Waiting for:"
+                turnFlag = true
             }
-            if (gameMode == GameMode.CLIENT ) {
-                if (currPlayer == clientPlayer) {
-                    statusMessage = "Your Turn:"
-                } else {
-                    statusMessage = "Waiting for:"
-                }
+            if (gameMode == GameMode.CLIENT && currPlayer == clientPlayer) {
+                turnFlag = true
             }
-            if (gameMode == GameMode.SERVER) {
-                if (remotePlayers.containsValue(currPlayer)) {
-                    statusMessage = "Waiting for:"
-                } else {
-                    statusMessage = "Your Turn:"
-                }
+            if (gameMode == GameMode.SERVER && !remotePlayers.containsValue(currPlayer)) {
+                turnFlag = true
             }
         }
-        intent.putExtra("StatusMessage", statusMessage)
+        intent.putExtra("YourTurn", turnFlag)
+
         context.sendBroadcast(intent)
     }
 

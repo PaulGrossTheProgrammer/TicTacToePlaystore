@@ -198,7 +198,7 @@ class GameplayActivity : AppCompatActivity() {
         override fun onReceive(context: Context, intent: Intent) {
 
             val stateString = intent.getStringExtra("State")
-            val statusMessage = intent.getStringExtra("StatusMessage")
+            val turnFlag = intent.getBooleanExtra("YourTurn", false)
 
             if (stateString != null) {
                 val newState = GameServer.decodeState(stateString)
@@ -207,6 +207,12 @@ class GameplayActivity : AppCompatActivity() {
                 displayCurrPlayer(newState.currPlayer)
                 if (newState.winner != GameServer.SquareState.E) {
                     displayWinner(newState.winner)
+                } else {
+                    if (turnFlag) {
+                        displayStatusMessage(getString(R.string.your_turn_message))
+                    } else {
+                        displayStatusMessage(getString(R.string.waiting_for_message))
+                    }
                 }
 
                 if (newState.winSquares == null) {
@@ -214,11 +220,6 @@ class GameplayActivity : AppCompatActivity() {
                 } else {
                     displayVictory(newState.winSquares)
                 }
-            }
-
-            if (statusMessage != null) {
-                Log.d(TAG, "message received [$statusMessage]")
-                displayStatusMessage(statusMessage)
             }
         }
     }

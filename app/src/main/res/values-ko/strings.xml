@@ -11,4 +11,7 @@
     <string name="new_game_title_message">새로운 게임</string>
     <string name="new_game_confirm_message">새 게임을 시작하시겠습니까?</string>
     <string name="new_button_message">새로운</string>
+    <string name="title_activity_settings">설정</string>
+    <string name="your_turn_message">네 차례 야</string>
+    <string name="waiting_for_message">기다리는 중</string>
 </resources>
