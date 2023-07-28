@@ -12,33 +12,25 @@ import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.atomic.AtomicBoolean
 
-class GameServer(applicationContext: Context, sharedPreferences: SharedPreferences): Thread() {
+class GameServer(private val context: Context, private val preferences: SharedPreferences): Thread() {
 
     private var socketServer: SocketServer? = null
     private var socketClient: SocketClient? = null
 
-    private val gameIsRunning = AtomicBoolean(true)
+    private val gameIsRunning = AtomicBoolean(true)  // TODO - this might not be needed.
 
     private val fromClientHandlerToGameServerQ: BlockingQueue<ClientRequest> = LinkedBlockingQueue()
     private val fromClientToGameServerQ: BlockingQueue<ClientRequest> = LinkedBlockingQueue()
     private val fromActivitiesToGameSeverQ: BlockingQueue<String> = LinkedBlockingQueue()
-    private val context: Context
-    private val preferences: SharedPreferences
-
-
-    init {
-        context = applicationContext  // To access the Intent message broadcast system.
-        preferences = sharedPreferences  // Used to load and save the game state.
-    }
 
     enum class GameMode {
-        /** Only responds to Activity requests. */
+        /** Game only responds to local Activity requests. */
         LOCAL,
 
-        /** Allow remote users to play using this GameServer. */
+        /** Allow remote users to play by joining this GameServer over the network. */
         SERVER,
 
-        /** Connect to a network GameServer. */
+        /** Joined a network GameServer. */
         CLIENT
     }
     private var gameMode: GameMode = GameMode.LOCAL
@@ -57,23 +49,20 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
     /**
      * The playing grid.
      */
-    var grid: Array<SquareState> = arrayOf(
-        SquareState.E, SquareState.E, SquareState.E,
-        SquareState.E, SquareState.E, SquareState.E,
-        SquareState.E, SquareState.E, SquareState.E
-    )
+    private var grid: Array<SquareState> = Array(9) {SquareState.E}
 
     private var currPlayer: SquareState = SquareState.X
     private var winner = SquareState.E
 
-    private var players: MutableMap<Queue<String>, SquareState> = mutableMapOf()
-    private var clientPlayer = SquareState.E  // Only used in CLIENT mode
+    private var remotePlayers: MutableMap<Queue<String>, SquareState> = mutableMapOf()  // Only used in SERVER mode.
+    private var clientPlayer = SquareState.E  // EMPTY unless in CLIENT mode.
 
     data class ClientRequest(val requestString: String, val responseQ: Queue<String>)
 
     private val allIpAddresses: MutableList<String> = mutableListOf()
 
     private fun determineIpAddresses() {
+        // FUTURE: Need to monitor the network and react to IP address changes.
         allIpAddresses.clear()
         val cm: ConnectivityManager = context.getSystemService(ConnectivityManager::class.java)
         val n = cm.activeNetwork
@@ -92,8 +81,6 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
     override fun run() {
 
         restoreGameState()
-        messageUIDisplayUpdate()
-        checkWinner()
 
         while (gameIsRunning.get()) {
             val activityRequest = fromActivitiesToGameSeverQ.poll()  // Non-blocking read.
@@ -136,6 +123,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             socketServer?.shutdownRequest()
             allIpAddresses.clear()
             socketServer = null
+            remotePlayers.clear()
         }
 
         autoStatusCountdown = 0
@@ -155,6 +143,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             socketClient = null
         }
 
+        remotePlayers.clear()
         socketServer = SocketServer(fromClientHandlerToGameServerQ)
         socketServer!!.start()
         determineIpAddresses()
@@ -167,6 +156,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             socketServer?.shutdownRequest()
             allIpAddresses.clear()
             socketServer = null
+            remotePlayers.clear()
         }
 
         if (socketClient != null) {
@@ -185,37 +175,36 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         if (message == "Initialise") {
             validRequest = true
             // Is there a spare player?
-            if (players.size < 2) {
+            if (remotePlayers.size < 2) {
                 // Is the current player available?
-                if (!players.containsValue(currPlayer)) {
+                if (!remotePlayers.containsValue(currPlayer)) {
                     // Allocate the current player to this client
-                    players[responseQ] = currPlayer
+                    remotePlayers[responseQ] = currPlayer
                 } else {
                     // Allocate the alternative player
                     if (currPlayer == SquareState.X) {
-                        players[responseQ] = SquareState.O
+                        remotePlayers[responseQ] = SquareState.O
                     } else {
-                        players[responseQ] = SquareState.X
+                        remotePlayers[responseQ] = SquareState.X
                     }
                 }
-                responseQ.add("Player=${players[responseQ].toString()}")
-                messageUIDisplayUpdate()
+                responseQ.add("Player=${remotePlayers[responseQ].toString()}")
+                messageGameplayDisplayStatus()
             }
         }
         if (message.startsWith("p:", true)) {
             validRequest = true
             val indexString = message[2].toString()
             val gridIndex = Integer.valueOf(indexString)
-            if (players[responseQ] == currPlayer) {  // Only allow the allocated player
+            if (remotePlayers[responseQ] == currPlayer) {  // Only allow the allocated player
                 val validMove = playSquare(gridIndex)
                 if (validMove) {
                     pushStateToClients() // Make sure all clients know about the change.
                 }
             } else {
-                // TODO - check that this still works.
                 responseQ.add("s:${encodeState(grid, currPlayer, winner)}")
             }
-            messageUIDisplayUpdate()
+            messageGameplayDisplayStatus()
         }
         if (message == "status:") {
             validRequest = true
@@ -224,10 +213,10 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         if (message == "shutdown" || message == "abandoned") {
             validRequest = true
             responseQ.add(message)
-            if (players.containsKey(responseQ)) {
-                players.remove(responseQ)
+            if (remotePlayers.containsKey(responseQ)) {
+                remotePlayers.remove(responseQ)
             }
-            messageUIDisplayUpdate()
+            messageGameplayDisplayStatus()
         }
 
         if (!validRequest) {
@@ -245,17 +234,13 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
                 previousStateUpdate = remoteState
 
-                // TODO - check that this still works
                 val stateVars = decodeState(remoteState)
                 grid = stateVars.grid
                 currPlayer = stateVars.currPlayer
                 winner = stateVars.winner
-//                decodeGrid(remoteState.substring(0, 9))
-//                currPlayer = SquareState.valueOf(remoteState[9].toString())
-//                winner = SquareState.valueOf(remoteState[10].toString())
 
-                saveGameState()  // FIXME - on disconnect we lose the STATE???
-                messageUIDisplayUpdate()
+                saveGameState()
+                messageGameplayDisplayStatus()
             }
         }
         if (message.startsWith("Player=", true)) {
@@ -272,11 +257,10 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
     private fun handleActivityMessage(message: String) {
         if (message == "reset:") {
             resetGame()
-            messageUIDisplayUpdate()
+            messageGameplayDisplayStatus()
         }
-        if (message == "resume:") {
-            restoreGameState()
-            messageUIDisplayUpdate()
+        if (message == "status:") {
+            messageGameplayDisplayStatus()
         }
         if (message.startsWith("p:", true)) {
             if (gameMode == GameMode.CLIENT) {
@@ -286,10 +270,10 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
                 val gridIndex = Integer.valueOf(indexString)
 
                 // Only allow the server to play an unallocated player
-                if (!players.containsValue(currPlayer)) {
+                if (!remotePlayers.containsValue(currPlayer)) {
                     val validMove= playSquare(gridIndex)
                     if (validMove) {
-                        messageUIDisplayUpdate()
+                        messageGameplayDisplayStatus()
                         if (gameMode == GameMode.SERVER) {
                             pushStateToClients()
                         }
@@ -317,13 +301,12 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         }
     }
 
-
     private fun pushStateToClients() {
-        socketServer?.pushMessageToClients("s:${encodeGrid(grid)}$currPlayer$winner")
+        socketServer?.pushMessageToClients("s:${encodeState(grid, currPlayer, winner)}")
     }
 
     fun pauseApp() {
-        // TODO - pause App mode while the MainActivity is suspended or being updated.
+        // TODO - pause App mode while the App isn't visible?
     }
 
     fun resumeApp() {
@@ -355,11 +338,9 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
     /**
      * Saves the current App state.
-     *
-     * MUST BE called from overridden onPause() to avoid accidental state loss.
      */
     private fun saveGameState() {
-        // FIXME - there seems to be some redundant calls to this function.
+        // The winner isn't explicitly stored, because it can be derived from the game state.
         val editor = preferences.edit()
 
         // Save the grid state.
@@ -373,8 +354,6 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
     /**
      * Restores the App state from the last time it was running.
-     *
-     * MUST BE called from onCreate().
      */
     private fun restoreGameState() {
         Log.d(TAG, "Restoring previous game state...")
@@ -387,6 +366,8 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
         // If there is no current player to restore, default to "X"
         currPlayer = SquareState.valueOf(preferences.getString("CurrPlayer", "X").toString())
+
+        checkWinner() // Because the winner is only implied by the game state, not explicitly stored.
     }
 
     private fun messageSettingsDisplayStatus() {
@@ -419,12 +400,12 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         context.sendBroadcast(intent)
     }
 
-    private fun messageUIDisplayUpdate() {
+    private fun messageGameplayDisplayStatus() {
         val intent = Intent()
         intent.action = context.packageName + GameplayActivity.DISPLAY_MESSAGE_SUFFIX
         intent.putExtra("State", encodeState(grid, currPlayer, winner))
 
-        // FIXME - replace this with flags, and Localise the Activity messages.
+        // FIXME - replace this with flags, to allow for Localised Activity messages.
         var statusMessage = ""
         if (winner != SquareState.E) {
             statusMessage = "Winner!"
@@ -440,7 +421,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
                 }
             }
             if (gameMode == GameMode.SERVER) {
-                if (players.containsValue(currPlayer)) {
+                if (remotePlayers.containsValue(currPlayer)) {
                     statusMessage = "Waiting for:"
                 } else {
                     statusMessage = "Your Turn:"
@@ -451,14 +432,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         context.sendBroadcast(intent)
     }
 
-
-//    fun decodeGrid(gridString: String) {
-//        for (i in 0..8) {
-//            grid[i] = SquareState.valueOf(gridString[i].toString())
-//        }
-//    }
-
-    fun resetGame() {
+    private fun resetGame() {
         for (i in 0..8) {
             grid[i] = SquareState.E
         }
@@ -482,19 +456,19 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
 
         checkWinner()
         if (winner == SquareState.E) {
-            // Switch to next player
+            // No winner, so switch to next player
             currPlayer = if (currPlayer == SquareState.X) {
                 SquareState.O
             } else {
                 SquareState.X
             }
         }
-        saveGameState()  // TODO: Is this redundant???
+        saveGameState()
         return true
     }
 
     private fun checkWinner() {
-        val winSquares = getWinningSquares(grid)
+        val winSquares = getWinningIndices(grid)
         if (winSquares != null) {
             winner = grid[winSquares[0]]
         }
@@ -518,7 +492,7 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             listOf(2, 4, 6)
         )
 
-        private fun getWinningSquares(grid: Array<SquareState>): List<Int>? {
+        private fun getWinningIndices(grid: Array<SquareState>): List<Int>? {
             allPossibleWinCombinations.forEach{ possibleWin ->
                 if (grid[possibleWin[0]] != SquareState.E
                     &&
@@ -530,7 +504,8 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             }
             return null
         }
-        fun encodeGrid(grid: Array<SquareState>): String {
+
+        private fun encodeGrid(grid: Array<SquareState>): String {
             var encoded = ""
             for (i in 0..8) {
                 encoded += grid[i].toString()
@@ -541,11 +516,10 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
         fun encodeState(grid: Array<SquareState>, currPlayer: SquareState, winner: SquareState ): String {
             var state = "${encodeGrid(grid)}$currPlayer$winner"
 
-            val winSquares = getWinningSquares(grid)
-            if (winSquares == null) {
+            if (winner == SquareState.E) {
                 state += "EEE"
             } else {
-                winSquares.forEach { square ->
+                getWinningIndices(grid)?.forEach { square ->
                     state += square.toString()
                 }
             }
@@ -571,7 +545,8 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             return StateVariables(grid, currPlayer, winner, winSquares)
         }
 
-        // The GameServer always runs in it's own thread, and shutdown() must be called as the App closes.
+        // The GameServer always runs in it's own thread,
+        // and stopGame() must be called as the App closes to avoid a memory leak.
         @SuppressLint("StaticFieldLeak")
         private var singletonGameServer: GameServer? = null
 
@@ -585,21 +560,21 @@ class GameServer(applicationContext: Context, sharedPreferences: SharedPreferenc
             }
         }
 
-        fun queueActivityRequest(request: String) {
+        fun queueActivityMessage(message: String) {
             if (singletonGameServer?.gameIsRunning!!.get()) {
-                singletonGameServer?.fromActivitiesToGameSeverQ?.add(request)
+                singletonGameServer?.fromActivitiesToGameSeverQ?.add(message)
             }
         }
 
-        fun queueClientHandlerRequest(request: String, responseQ: Queue<String>) {
+        fun queueClientHandlerMessage(message: String, responseQ: Queue<String>) {
             if (singletonGameServer?.gameIsRunning!!.get()) {
-                singletonGameServer?.fromClientHandlerToGameServerQ?.add(ClientRequest(request, responseQ))
+                singletonGameServer?.fromClientHandlerToGameServerQ?.add(ClientRequest(message, responseQ))
             }
         }
 
-        fun queueClientRequest(request: String, responseQ: Queue<String>) {
+        fun queueClientMessage(message: String, responseQ: Queue<String>) {
             if (singletonGameServer?.gameIsRunning!!.get()) {
-                singletonGameServer?.fromClientToGameServerQ?.add(ClientRequest(request, responseQ))
+                singletonGameServer?.fromClientToGameServerQ?.add(ClientRequest(message, responseQ))
             }
         }
     }

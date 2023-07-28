@@ -24,7 +24,7 @@ class SettingsActivity : AppCompatActivity() {
         private var working = true
         override fun run() {
             while (working) {
-                GameServer.queueActivityRequest("UpdateSettings")
+                GameServer.queueActivityMessage("UpdateSettings")
                 sleep(refreshPeriodMilliseconds)
             }
         }
@@ -68,11 +68,11 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     fun onClickLocal(view: View) {
-        GameServer.queueActivityRequest("StartLocal:")
+        GameServer.queueActivityMessage("StartLocal:")
     }
 
     fun onClickStartServer(view: View) {
-        GameServer.queueActivityRequest("StartServer:")
+        GameServer.queueActivityMessage("StartServer:")
     }
 
     fun onClickPrevAddress(view: View) {
@@ -125,7 +125,7 @@ class SettingsActivity : AppCompatActivity() {
             editor.putString("RemoteServer", remoteIP)
             editor.apply()
             Log.d(TAG, "TODO Connect to $remoteIP")
-            GameServer.queueActivityRequest("RemoteServer:$remoteIP")
+            GameServer.queueActivityMessage("RemoteServer:$remoteIP")
         }
         builder.setNegativeButton(getString(R.string.go_back_message)) { _, _ -> }
         builder.show()
