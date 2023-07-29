@@ -15,10 +15,10 @@
     <string name="waiting_for_message">Waiting for:</string>
     <string name="button_start_server">Invite Others</string>
     <string name="button_join_game">Join Game</string>
-    <string name="button_local_game">Local</string>
+    <string name="button_local_game">Single Device</string>
     <string name="label_mode">Mode:</string>
-    <string name="message_server_not_running">Server not running</string>
-    <string name="mode_local">LOCAL</string>
-    <string name="mode_client">CLIENT</string>
-    <string name="mode_server">SERVER</string>
+    <string name="message_server_not_running">Remote devices not allowed</string>
+    <string name="mode_local">SINGLE DEVICE</string>
+    <string name="mode_client">JOINED REMOTE GAME</string>
+    <string name="mode_server">"REMOTE DEVICES INVITED "</string>
 </resources>
