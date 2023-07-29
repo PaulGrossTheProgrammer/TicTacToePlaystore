@@ -22,7 +22,10 @@ class GameplayActivity : AppCompatActivity() {
     private var colorOfReset: Int? = null
 
     override fun onPause() {
-        disableMessagesFromGameServer()
+        // FIXME - this disable call seems to crash the app when it returns to the foreground...?
+        // why?
+        // Maybe I simply don't disable???
+//        disableMessagesFromGameServer()
         super.onPause()
 
         //  Maybe track "paused" flag so clients temporarily pause comms???
@@ -129,11 +132,6 @@ class GameplayActivity : AppCompatActivity() {
     private fun displayCurrPlayer(player: GameServer.SquareState) {
         (textPlayerView as TextView).text =
             String.format(getString(R.string.curr_player_message), player.toString())
-    }
-
-    private fun displayCurrPlayer_old(player: String) {
-        (textPlayerView as TextView).text =
-            String.format(getString(R.string.curr_player_message), player)
     }
 
     private fun displayStatusMessage(status: String) {

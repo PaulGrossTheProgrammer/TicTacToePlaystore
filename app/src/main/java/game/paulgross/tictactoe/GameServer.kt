@@ -65,8 +65,7 @@ class GameServer(private val context: Context, private val preferences: SharedPr
         // FUTURE: Need to monitor the network and react to IP address changes.
         allIpAddresses.clear()
         val cm: ConnectivityManager = context.getSystemService(ConnectivityManager::class.java)
-        val n = cm.activeNetwork
-        val lp = cm.getLinkProperties(n)
+        val lp = cm.getLinkProperties(cm.activeNetwork)
         val addrs = lp?.linkAddresses
         addrs?.forEach { addr ->
             allIpAddresses.add(addr.address.hostAddress)
