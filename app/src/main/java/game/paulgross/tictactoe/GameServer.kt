@@ -375,6 +375,7 @@ class GameServer(private val context: Context, private val preferences: SharedPr
         intent.action = context.packageName + SettingsActivity.DISPLAY_MESSAGE_SUFFIX
         intent.putExtra("CurrMode", gameMode.toString())
 
+        // FIXME - send flags so the activity can use localised messages.
         var status = ""
         if (gameMode == GameMode.CLIENT) {
             status = "Connected to ${socketClient?.getServer()}"
@@ -385,7 +386,7 @@ class GameServer(private val context: Context, private val preferences: SharedPr
 
         intent.putExtra("CurrStatus", status)
 
-        var listAsString = "Server not running"
+        var listAsString = ""
         if (gameMode == GameMode.SERVER) {
             listAsString = ""
             allIpAddresses.forEach { addr ->

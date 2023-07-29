@@ -157,16 +157,29 @@ class SettingsActivity : AppCompatActivity() {
                 findViewById<TextView>(R.id.textViewStatus).text = currStatus
             }
             if (currMode != null) {
-                findViewById<TextView>(R.id.textViewCurrentMode).text = currMode
+                var modeText = ""
+                if (currMode == GameServer.GameMode.SERVER.toString()) {
+                    modeText = getString(R.string.mode_server)
+                }
+                if (currMode == GameServer.GameMode.CLIENT.toString()) {
+                    modeText = getString(R.string.mode_client)
+                }
+                if (currMode == GameServer.GameMode.LOCAL.toString()) {
+                    modeText = getString(R.string.mode_local)
+                }
+                findViewById<TextView>(R.id.textViewCurrentMode).text = modeText
             }
             if (ipAddressList != null) {
-
-                val newIpAddresses = ipAddressList.split(",")
-                if (newIpAddresses != allIpAddresses) {
-                    allIpAddresses?.clear()
-                    allIpAddresses?.addAll(newIpAddresses)
-                    val primaryAddress = allIpAddresses?.get(allIpAddresses!!.lastIndex)
-                    findViewById<TextView>(R.id.textViewIPAddress).text = primaryAddress
+                if (ipAddressList == "") {
+                    findViewById<TextView>(R.id.textViewIPAddress).text = getString(R.string.message_server_not_running)
+                } else {
+                    val newIpAddresses = ipAddressList.split(",")
+                    if (newIpAddresses != allIpAddresses) {
+                        allIpAddresses?.clear()
+                        allIpAddresses?.addAll(newIpAddresses)
+                        val primaryAddress = allIpAddresses?.get(allIpAddresses!!.lastIndex)
+                        findViewById<TextView>(R.id.textViewIPAddress).text = primaryAddress
+                    }
                 }
             }
         }

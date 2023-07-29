@@ -14,4 +14,12 @@
     <string name="title_activity_settings">設置</string>
     <string name="your_turn_message">到你</string>
     <string name="waiting_for_message">等待</string>
+    <string name="button_start_server">啟動服務器</string>
+    <string name="button_join_game">加入遊戲</string>
+    <string name="button_local_game">當地</string>
+    <string name="label_mode">模式:</string>
+    <string name="message_server_not_running">服務器未運行</string>
+    <string name="mode_local">當地</string>
+    <string name="mode_client">客戶</string>
+    <string name="mode_server">服務器</string>
 </resources>

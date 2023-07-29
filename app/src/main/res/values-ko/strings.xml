@@ -14,4 +14,12 @@
     <string name="title_activity_settings">설정</string>
     <string name="your_turn_message">네 차례 야</string>
     <string name="waiting_for_message">기다리는 중</string>
+    <string name="button_start_server">서버 시작</string>
+    <string name="button_join_game">게임 참가</string>
+    <string name="button_local_game">현지의</string>
+    <string name="label_mode">방법:</string>
+    <string name="message_server_not_running">서버가 실행되지 않음</string>
+    <string name="mode_local">현지의</string>
+    <string name="mode_client">고객</string>
+    <string name="mode_server">섬기는 사람</string>
 </resources>
