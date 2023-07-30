@@ -185,9 +185,12 @@ class GameplayActivity : AppCompatActivity() {
         Log.d(TAG, "Enabled message receiver for [${packageName + DISPLAY_MESSAGE_SUFFIX}]")
     }
 
-    private fun disableMessagesFromGameServer() {
-        unregisterReceiver(gameMessageReceiver)
-    }
+    // TODO - determine if this function is ever needed...
+//    private fun disableMessagesFromGameServer() {
+//        unregisterReceiver(gameMessageReceiver)
+//    }
+
+    private var previousStateString = ""
 
     /**
         Receive messages from the GameServer.
@@ -198,8 +201,8 @@ class GameplayActivity : AppCompatActivity() {
             val stateString = intent.getStringExtra("State")
             val turnFlag = intent.getBooleanExtra("YourTurn", false)
 
-            // TODO - compare the prev state before making changes.
-            if (stateString != null) {
+            if (stateString != null && previousStateString != stateString) {
+                previousStateString = stateString
                 val newState = GameServer.decodeState(stateString)
 
                 displayGrid(newState.grid)
