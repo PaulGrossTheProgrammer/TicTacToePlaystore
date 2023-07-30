@@ -198,6 +198,7 @@ class GameplayActivity : AppCompatActivity() {
             val stateString = intent.getStringExtra("State")
             val turnFlag = intent.getBooleanExtra("YourTurn", false)
 
+            // TODO - compare the prev state before making changes.
             if (stateString != null) {
                 val newState = GameServer.decodeState(stateString)
 
