@@ -13,6 +13,12 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.atomic.AtomicBoolean
 
 class SocketClient(private val server: String, private val port: Int): Thread() {
+
+    // FIXME - doesn't handle when the remote server isn't running...
+    // Use a "connecting" flag in a delay loop with a limit to the retries
+    // Ask user how long to wait for remote server to accept connection
+    // Permit user to abort connections that take too long.
+
     private val clientSocket: Socket = Socket(server, port)
 
     private val fromGameServerQ: BlockingQueue<String> = LinkedBlockingQueue()

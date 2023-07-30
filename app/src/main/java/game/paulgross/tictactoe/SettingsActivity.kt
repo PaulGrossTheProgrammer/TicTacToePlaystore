@@ -109,6 +109,8 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     fun onClickJoinRemote(view: View) {
+
+
         if (GameServer.getGameMode() == GameServer.GameMode.LOCAL) {
             val builder = AlertDialog.Builder(this)
             builder.setTitle("Remote Connect")
@@ -173,8 +175,6 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private var allIpAddresses: MutableList<String>? = mutableListOf()
-//    private var remoteServerName = ""
-//    private var countOfClients = 0
 
     /**
     Receive messages from the GameServer.
@@ -182,42 +182,44 @@ class SettingsActivity : AppCompatActivity() {
     private val gameMessageReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             val ipAddressList = intent.getStringExtra("IpAddressList")
-            val currMode = intent.getStringExtra("CurrMode")
-//            val currStatus = intent.getStringExtra("CurrStatus")  // FIXME - delete this
+            val currModeString = intent.getStringExtra("CurrMode")
 
-            // FIXME: - doesn't work yet
-            val remoteServer = intent.getStringExtra("RemoteServer")
-            val clientCount = intent.getStringExtra("ClientCount")
+            if (currModeString != null) {
+                val currMode = GameServer.GameMode.valueOf(currModeString)
 
+                val remoteServer = intent.getStringExtra("RemoteServer")
+                val clientCount = intent.getIntExtra("ClientCount", 0)
 
-            // FIXME: - doesn't work yet
-            if (remoteServer != null) {
-                val status = String.format(getString(R.string.remote_server), remoteServer)
-                findViewById<TextView>(R.id.textViewStatus).text = status
-            }
-
-            // FIXME: - doesn't work yet
-            if (clientCount != null) {
-                val clients = String.format(getString(R.string.message_connected_clients), clientCount)
-                findViewById<TextView>(R.id.textViewStatus).text = clients
-            }
-
-            if (currMode != null) {
-                var modeText = ""
-                if (currMode == GameServer.GameMode.SERVER.toString()) {
-                    modeText = getString(R.string.mode_server)
+                if (currMode == GameServer.GameMode.LOCAL) {
+                    findViewById<TextView>(R.id.textViewStatus).text = ""
                 }
-                if (currMode == GameServer.GameMode.CLIENT.toString()) {
-                    modeText = getString(R.string.mode_client)
-                    allIpAddresses?.clear()
-                    findViewById<TextView>(R.id.textViewIPAddress).text = getString(R.string.message_server_not_running)
+                if (currMode == GameServer.GameMode.CLIENT && remoteServer != null) {
+                    val status = String.format(getString(R.string.remote_server), remoteServer)
+                    findViewById<TextView>(R.id.textViewStatus).text = status
                 }
-                if (currMode == GameServer.GameMode.LOCAL.toString()) {
-                    modeText = getString(R.string.mode_local)
-                    allIpAddresses?.clear()
-                    findViewById<TextView>(R.id.textViewIPAddress).text = getString(R.string.message_server_not_running)
+
+                if (currMode == GameServer.GameMode.SERVER) {
+                    val clients = String.format(getString(R.string.message_connected_clients), clientCount)
+                    findViewById<TextView>(R.id.textViewStatus).text = clients
                 }
-                findViewById<TextView>(R.id.textViewCurrentMode).text = modeText
+
+                if (currModeString != null) {
+                    var modeText = ""
+                    if (currModeString == GameServer.GameMode.SERVER.toString()) {
+                        modeText = getString(R.string.mode_server)
+                    }
+                    if (currModeString == GameServer.GameMode.CLIENT.toString()) {
+                        modeText = getString(R.string.mode_client)
+                        allIpAddresses?.clear()
+                        findViewById<TextView>(R.id.textViewIPAddress).text = getString(R.string.message_server_not_running)
+                    }
+                    if (currModeString == GameServer.GameMode.LOCAL.toString()) {
+                        modeText = getString(R.string.mode_local)
+                        allIpAddresses?.clear()
+                        findViewById<TextView>(R.id.textViewIPAddress).text = getString(R.string.message_server_not_running)
+                    }
+                    findViewById<TextView>(R.id.textViewCurrentMode).text = modeText
+                }
             }
 
             if (ipAddressList != null) {

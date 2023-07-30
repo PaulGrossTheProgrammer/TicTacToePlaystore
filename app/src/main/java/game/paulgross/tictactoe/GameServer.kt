@@ -117,6 +117,8 @@ class GameServer(private val context: Context, private val preferences: SharedPr
     }
 
     private fun switchToRemoteServerMode(address: String) {
+        // FIXME - doesn't handle when the remote server isn't running...
+
         Log.d(TAG, "Switch to Remote Server at: $address")
         if (socketServer != null) {
             socketServer?.shutdownRequest()
@@ -376,28 +378,18 @@ class GameServer(private val context: Context, private val preferences: SharedPr
     }
 
     private fun messageSettingsDisplayStatus() {
+        Log.d(TAG, "Sending the settings ...")
+
         val intent = Intent()
         intent.action = context.packageName + SettingsActivity.DISPLAY_MESSAGE_SUFFIX
         intent.putExtra("CurrMode", gameMode.toString())
 
-        // FIXME - this doesn't work yet
         if (gameMode == GameMode.CLIENT) {
             intent.putExtra("RemoteServer", socketClient?.getServer())
         }
-        // FIXME - this doesn't work yet
         if (gameMode == GameMode.SERVER) {
             intent.putExtra("ClientCount", socketServer?.countOfClients())
         }
-
-        // FIXME - send flags so the activity can use localised messages.
-/*        var status = ""
-        if (gameMode == GameMode.CLIENT) {
-            status = "Connected to ${socketClient?.getServer()}"
-        }
-        if (gameMode == GameMode.SERVER) {
-            status = "Connected Clients: ${socketServer?.countOfClients()}"
-        }
-        intent.putExtra("CurrStatus", status)*/
 
         var listAsString = ""
         if (gameMode == GameMode.SERVER) {
