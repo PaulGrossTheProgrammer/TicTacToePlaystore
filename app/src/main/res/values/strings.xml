@@ -20,5 +20,13 @@
     <string name="message_server_not_running">Remote devices not allowed</string>
     <string name="mode_local">SINGLE DEVICE</string>
     <string name="mode_client">JOINED REMOTE GAME</string>
-    <string name="mode_server">"REMOTE DEVICES INVITED "</string>
+    <string name="mode_server">REMOTE DEVICES INVITED</string>
+    <string name="confirm_start_server">Invite other players?</string>
+    <string name="button_confirm">Confirm</string>
+    <string name="confirm_stop_server">Stop all invited players?</string>
+    <string name="title_stop_server">Stop Invited Players</string>
+    <string name="title_stop_client">Leave game</string>
+    <string name="confirm_stop_client">Leave the game you joined?</string>
+    <string name="remote_server">Connected to %1$s</string>
+    <string name="message_connected_clients">Connected devices: %1$s</string>
 </resources>

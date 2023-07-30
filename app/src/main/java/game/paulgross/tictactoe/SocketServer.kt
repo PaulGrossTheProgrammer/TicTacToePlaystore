@@ -65,7 +65,7 @@ class SocketServer(private val gameRequestQ: BlockingQueue<GameServer.ClientRequ
 
         Log.d(TAG, "The Socket Server has ${clientHandlers.size} open Client Handlers.")
         clientHandlers.forEach {handler ->
-            handler.shutdownRequest()  // TODO - is a queueMessage a better idea???
+            handler.shutdownRequest()
         }
     }
 

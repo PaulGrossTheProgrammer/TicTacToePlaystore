@@ -16,10 +16,18 @@
     <string name="waiting_for_message">等待</string>
     <string name="button_start_server">邀請其他人</string>
     <string name="button_join_game">加入遊戲</string>
-    <string name="button_local_game">當地</string>
+    <string name="button_local_game">單一設備</string>
     <string name="label_mode">模式:</string>
-    <string name="message_server_not_running">服務器未運行</string>
-    <string name="mode_local">當地</string>
-    <string name="mode_client">客戶</string>
-    <string name="mode_server">服務器</string>
+    <string name="message_server_not_running">不允許遠程設備</string>
+    <string name="mode_local">單一設備</string>
+    <string name="mode_client">加入遠程遊戲</string>
+    <string name="mode_server">邀請的遠程設備</string>
+    <string name="confirm_start_server">邀請其他玩家？</string>
+    <string name="button_confirm">確認</string>
+    <string name="confirm_stop_server">停止所有受邀玩家？</string>
+    <string name="title_stop_server">停止受邀玩家</string>
+    <string name="title_stop_client">離開遊戲</string>
+    <string name="confirm_stop_client">離開您加入的遊戲嗎？</string>
+    <string name="remote_server">連接到 %1$s</string>
+    <string name="message_connected_clients">連接設備 %1$s</string>
 </resources>

@@ -16,10 +16,18 @@
     <string name="waiting_for_message">기다리는 중</string>
     <string name="button_start_server">게임 초대하기</string>
     <string name="button_join_game">게임 참가</string>
-    <string name="button_local_game">현지의</string>
+    <string name="button_local_game">단일 장치</string>
     <string name="label_mode">방법:</string>
-    <string name="message_server_not_running">서버가 실행되지 않음</string>
-    <string name="mode_local">현지의</string>
-    <string name="mode_client">고객</string>
-    <string name="mode_server">섬기는 사람</string>
+    <string name="message_server_not_running">원격 장치는 허용되지 않습니다</string>
+    <string name="mode_local">단일 장치</string>
+    <string name="mode_client">참가한 원격 게임</string>
+    <string name="mode_server">초대된 원격 장치</string>
+    <string name="confirm_start_server">다른 플레이어를 초대하시겠습니까?</string>
+    <string name="button_confirm">확인하다</string>
+    <string name="confirm_stop_server">초대된 모든 플레이어를 중지하시겠습니까?</string>
+    <string name="title_stop_server">초대된 플레이어 중지</string>
+    <string name="title_stop_client">게임 나가기</string>
+    <string name="confirm_stop_client">가입한 게임에서 나가시겠습니까?</string>
+    <string name="remote_server">연결됨  %1$s</string>
+    <string name="message_connected_clients">연결된 장치 %1$s</string>
 </resources>

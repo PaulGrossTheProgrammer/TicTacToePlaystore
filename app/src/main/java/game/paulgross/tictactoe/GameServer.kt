@@ -284,15 +284,21 @@ class GameServer(private val context: Context, private val preferences: SharedPr
             messageSettingsDisplayStatus()
         }
         if (message == "StartServer:") {
-            switchToLocalServerMode()
+            if (gameMode != GameMode.SERVER) {
+                switchToLocalServerMode()
+            }
         }
         if (message == "StartLocal:") {
-            switchToPureLocalMode()
+            if (gameMode != GameMode.LOCAL) {
+                switchToPureLocalMode()
+            }
         }
         if (message.startsWith("RemoteServer:")) {
-            val ip = message.substringAfter(":", "")
-            if (ip != "") {
-                switchToRemoteServerMode(ip)
+            if (gameMode != GameMode.CLIENT) {
+                val ip = message.substringAfter(":", "")
+                if (ip != "") {
+                    switchToRemoteServerMode(ip)
+                }
             }
         }
         if (message == "StopGame") {
@@ -374,16 +380,24 @@ class GameServer(private val context: Context, private val preferences: SharedPr
         intent.action = context.packageName + SettingsActivity.DISPLAY_MESSAGE_SUFFIX
         intent.putExtra("CurrMode", gameMode.toString())
 
+        // FIXME - this doesn't work yet
+        if (gameMode == GameMode.CLIENT) {
+            intent.putExtra("RemoteServer", socketClient?.getServer())
+        }
+        // FIXME - this doesn't work yet
+        if (gameMode == GameMode.SERVER) {
+            intent.putExtra("ClientCount", socketServer?.countOfClients())
+        }
+
         // FIXME - send flags so the activity can use localised messages.
-        var status = ""
+/*        var status = ""
         if (gameMode == GameMode.CLIENT) {
             status = "Connected to ${socketClient?.getServer()}"
         }
         if (gameMode == GameMode.SERVER) {
             status = "Connected Clients: ${socketServer?.countOfClients()}"
         }
-
-        intent.putExtra("CurrStatus", status)
+        intent.putExtra("CurrStatus", status)*/
 
         var listAsString = ""
         if (gameMode == GameMode.SERVER) {
@@ -548,6 +562,10 @@ class GameServer(private val context: Context, private val preferences: SharedPr
             } else {
                 Log.d(TAG, "Already created GameServer.")
             }
+        }
+
+        fun getGameMode(): GameMode? {
+            return singletonGameServer?.getGameMode()
         }
 
         fun queueActivityMessage(message: String) {

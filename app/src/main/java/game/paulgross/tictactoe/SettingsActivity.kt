@@ -43,6 +43,8 @@ class SettingsActivity : AppCompatActivity() {
         Log.d(TAG, "Getting GameServer ...")
         GameServer.activate(applicationContext, getPreferences(MODE_PRIVATE))
 
+        // Maybe use push messages from the GameServer instead?
+        // onCreate starts push, onPause stops push???
         periodicUpdateThread = PeriodicUpdater()
         periodicUpdateThread!!.start()
     }
@@ -68,11 +70,67 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     fun onClickLocal(view: View) {
-        GameServer.queueActivityMessage("StartLocal:")
+        if (GameServer.getGameMode() == GameServer.GameMode.SERVER) {
+            val builder = AlertDialog.Builder(this)
+            builder.setTitle(getString(R.string.title_stop_server))
+            builder.setMessage(getString(R.string.confirm_stop_server))
+            builder.setPositiveButton(getString(R.string.button_confirm)) { _, _ ->
+                GameServer.queueActivityMessage("StartLocal:")
+            }
+            builder.setNegativeButton(getString(R.string.go_back_message)) { _, _ -> }
+            builder.show()
+            return
+        }
+
+        if (GameServer.getGameMode() == GameServer.GameMode.CLIENT) {
+            val builder = AlertDialog.Builder(this)
+            builder.setTitle(getString(R.string.title_stop_client))
+            builder.setMessage(getString(R.string.confirm_stop_client))
+            builder.setPositiveButton(getString(R.string.button_confirm)) { _, _ ->
+                GameServer.queueActivityMessage("StartLocal:")
+            }
+            builder.setNegativeButton(getString(R.string.go_back_message)) { _, _ -> }
+            builder.show()
+            return
+        }
     }
 
     fun onClickStartServer(view: View) {
-        GameServer.queueActivityMessage("StartServer:")
+        if (GameServer.getGameMode() == GameServer.GameMode.LOCAL) {
+            val builder = AlertDialog.Builder(this)
+            builder.setTitle(getString(R.string.button_start_server))
+            builder.setMessage(getString(R.string.confirm_start_server))
+            builder.setPositiveButton(getString(R.string.button_confirm)) { _, _ ->
+                GameServer.queueActivityMessage("StartServer:")
+            }
+            builder.setNegativeButton(getString(R.string.go_back_message)) { _, _ -> }
+            builder.show()
+        }
+    }
+
+    fun onClickJoinRemote(view: View) {
+        if (GameServer.getGameMode() == GameServer.GameMode.LOCAL) {
+            val builder = AlertDialog.Builder(this)
+            builder.setTitle("Remote Connect")
+            builder.setMessage("Enter Remote Address")
+
+            val input = EditText(this)
+            input.inputType = InputType.TYPE_CLASS_TEXT
+            val preferences = getPreferences(MODE_PRIVATE)
+            val prevServer = preferences.getString("RemoteServer", "192.168.1.").toString()
+            input.setText(prevServer)
+            builder.setView(input)
+
+            builder.setPositiveButton("Join") { _, _ ->
+                val remoteIP = input.text.toString()
+                val editor = preferences.edit()
+                editor.putString("RemoteServer", remoteIP)
+                editor.apply()
+                GameServer.queueActivityMessage("RemoteServer:$remoteIP")
+            }
+            builder.setNegativeButton(getString(R.string.go_back_message)) { _, _ -> }
+            builder.show()
+        }
     }
 
     fun onClickPrevAddress(view: View) {
@@ -107,30 +165,6 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
-    fun onClickJoinRemote(view: View) {
-        val builder = AlertDialog.Builder(this)
-        builder.setTitle("Remote Connect")
-        builder.setMessage("Enter Remote Address")
-
-        val input = EditText(this)
-        input.inputType = InputType.TYPE_CLASS_TEXT
-        val preferences = getPreferences(MODE_PRIVATE)
-        val prevServer = preferences.getString("RemoteServer", "192.168.1.").toString()
-        input.setText(prevServer)
-        builder.setView(input)
-
-        builder.setPositiveButton("Join") { _, _ ->
-            val remoteIP = input.text.toString()
-            val editor = preferences.edit()
-            editor.putString("RemoteServer", remoteIP)
-            editor.apply()
-            Log.d(TAG, "TODO Connect to $remoteIP")
-            GameServer.queueActivityMessage("RemoteServer:$remoteIP")
-        }
-        builder.setNegativeButton(getString(R.string.go_back_message)) { _, _ -> }
-        builder.show()
-    }
-
     private fun enableMessagesFromGameServer() {
         val intentFilter = IntentFilter()
         intentFilter.addAction(packageName + SettingsActivity.DISPLAY_MESSAGE_SUFFIX)
@@ -138,11 +172,9 @@ class SettingsActivity : AppCompatActivity() {
         Log.d(TAG, "Enabled message receiver for [${packageName + SettingsActivity.DISPLAY_MESSAGE_SUFFIX}]")
     }
 
-    private fun disableMessagesFromGameServer() {
-        unregisterReceiver(gameMessageReceiver)
-    }
-
     private var allIpAddresses: MutableList<String>? = mutableListOf()
+//    private var remoteServerName = ""
+//    private var countOfClients = 0
 
     /**
     Receive messages from the GameServer.
@@ -151,11 +183,25 @@ class SettingsActivity : AppCompatActivity() {
         override fun onReceive(context: Context, intent: Intent) {
             val ipAddressList = intent.getStringExtra("IpAddressList")
             val currMode = intent.getStringExtra("CurrMode")
-            val currStatus = intent.getStringExtra("CurrStatus")
+//            val currStatus = intent.getStringExtra("CurrStatus")  // FIXME - delete this
 
-            if (currStatus != null) {
-                findViewById<TextView>(R.id.textViewStatus).text = currStatus
+            // FIXME: - doesn't work yet
+            val remoteServer = intent.getStringExtra("RemoteServer")
+            val clientCount = intent.getStringExtra("ClientCount")
+
+
+            // FIXME: - doesn't work yet
+            if (remoteServer != null) {
+                val status = String.format(getString(R.string.remote_server), remoteServer)
+                findViewById<TextView>(R.id.textViewStatus).text = status
             }
+
+            // FIXME: - doesn't work yet
+            if (clientCount != null) {
+                val clients = String.format(getString(R.string.message_connected_clients), clientCount)
+                findViewById<TextView>(R.id.textViewStatus).text = clients
+            }
+
             if (currMode != null) {
                 var modeText = ""
                 if (currMode == GameServer.GameMode.SERVER.toString()) {
@@ -163,12 +209,17 @@ class SettingsActivity : AppCompatActivity() {
                 }
                 if (currMode == GameServer.GameMode.CLIENT.toString()) {
                     modeText = getString(R.string.mode_client)
+                    allIpAddresses?.clear()
+                    findViewById<TextView>(R.id.textViewIPAddress).text = getString(R.string.message_server_not_running)
                 }
                 if (currMode == GameServer.GameMode.LOCAL.toString()) {
                     modeText = getString(R.string.mode_local)
+                    allIpAddresses?.clear()
+                    findViewById<TextView>(R.id.textViewIPAddress).text = getString(R.string.message_server_not_running)
                 }
                 findViewById<TextView>(R.id.textViewCurrentMode).text = modeText
             }
+
             if (ipAddressList != null) {
                 if (ipAddressList == "") {
                     findViewById<TextView>(R.id.textViewIPAddress).text = getString(R.string.message_server_not_running)
